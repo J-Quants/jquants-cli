@@ -1,0 +1,238 @@
+name: Release
+
+on:
+  push:
+    tags:
+      - "v*"
+
+permissions: {}
+
+env:
+  BINARY_NAME: jquants
+
+jobs:
+  build:
+    name: Build ${{ matrix.target }}
+    runs-on: ${{ matrix.runner }}
+    permissions:
+      contents: read
+      actions: write
+    strategy:
+      fail-fast: false
+      matrix:
+        include:
+          - target: x86_64-apple-darwin
+            runner: macos-14
+            archive: tar.gz
+          - target: aarch64-apple-darwin
+            runner: macos-14
+            archive: tar.gz
+          - target: x86_64-unknown-linux-musl
+            runner: ubuntu-latest
+            archive: tar.gz
+          - target: aarch64-unknown-linux-musl
+            runner: ubuntu-latest
+            archive: tar.gz
+            use_cross: true
+          - target: x86_64-pc-windows-msvc
+            runner: windows-latest
+            archive: zip
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Install Rust stable
+        uses: dtolnay/rust-toolchain@e97e2d8cc328f1b50210efc529dca0028893a2d9 # v1
+        with:
+          toolchain: stable
+          targets: ${{ matrix.target }}
+
+      - name: Get version
+        id: version
+        shell: bash
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          echo "version=${TAG#v}" >> "$GITHUB_OUTPUT"
+
+      - name: Set version in Cargo.toml
+        shell: bash
+        env:
+          VERSION: ${{ steps.version.outputs.version }}
+        run: |
+          sed -i.bak "s/^version = \".*\"/version = \"${VERSION}\"/" Cargo.toml
+          rm -f Cargo.toml.bak
+
+      - name: Install musl-tools (Linux x86_64)
+        if: matrix.target == 'x86_64-unknown-linux-musl'
+        run: sudo apt-get update && sudo apt-get install -y musl-tools
+
+      - name: Install cross (ARM Linux)
+        if: matrix.use_cross == true
+        run: cargo install cross --git https://github.com/cross-rs/cross --tag v0.2.5
+
+      - name: Build (cross)
+        if: matrix.use_cross == true
+        env:
+          TARGET: ${{ matrix.target }}
+        run: cross build --release --target "$TARGET"
+
+      - name: Build (cargo)
+        if: matrix.use_cross != true
+        env:
+          TARGET: ${{ matrix.target }}
+        shell: bash
+        run: cargo build --release --target "$TARGET"
+
+      - name: Create archive (Unix)
+        if: matrix.archive == 'tar.gz'
+        env:
+          TARGET: ${{ matrix.target }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: bash
+        run: |
+          ARCHIVE="${BINARY_NAME}-${VERSION}-${TARGET}.tar.gz"
+          BINARY_PATH="target/${TARGET}/release/${BINARY_NAME}"
+          tar -czf "${ARCHIVE}" -C "$(dirname "${BINARY_PATH}")" "${BINARY_NAME}" -C "$GITHUB_WORKSPACE" LICENSE README.md
+          echo "ARCHIVE=${ARCHIVE}" >> "$GITHUB_ENV"
+
+      - name: Create archive (Windows)
+        if: matrix.archive == 'zip'
+        env:
+          TARGET: ${{ matrix.target }}
+          VERSION: ${{ steps.version.outputs.version }}
+        shell: pwsh
+        run: |
+          $ARCHIVE = "${env:BINARY_NAME}-${env:VERSION}-${env:TARGET}.zip"
+          $BINARY = "target/${env:TARGET}/release/${env:BINARY_NAME}.exe"
+          Compress-Archive -Path $BINARY, "LICENSE", "README.md" -DestinationPath $ARCHIVE
+          echo "ARCHIVE=$ARCHIVE" | Out-File -FilePath $env:GITHUB_ENV -Append
+
+      - name: Upload artifact
+        uses: actions/upload-artifact@bbbca2ddaa5d8feaa63e36b76fdaad77386f024f # v7.0.0
+        with:
+          name: ${{ matrix.target }}
+          path: ${{ env.ARCHIVE }}
+
+  release:
+    name: Create GitHub Release
+    needs: build
+    runs-on: ubuntu-latest
+    permissions:
+      contents: write
+      actions: read
+    outputs:
+      sha256_x86_64_darwin: ${{ steps.checksums.outputs.sha256_x86_64_darwin }}
+      sha256_aarch64_darwin: ${{ steps.checksums.outputs.sha256_aarch64_darwin }}
+      sha256_x86_64_linux: ${{ steps.checksums.outputs.sha256_x86_64_linux }}
+      sha256_aarch64_linux: ${{ steps.checksums.outputs.sha256_aarch64_linux }}
+
+    steps:
+      - uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+
+      - name: Download all artifacts
+        uses: actions/download-artifact@37930b1c2abaa49bbe596cd826c3c89aef350131 # v7
+        with:
+          path: artifacts
+          merge-multiple: true
+
+      - name: Generate checksums
+        id: checksums
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          cd artifacts
+
+          SHA_X86_DARWIN=$(sha256sum "${BINARY_NAME}-${VERSION}-x86_64-apple-darwin.tar.gz" | awk '{print $1}')
+          SHA_ARM_DARWIN=$(sha256sum "${BINARY_NAME}-${VERSION}-aarch64-apple-darwin.tar.gz" | awk '{print $1}')
+          SHA_X86_LINUX=$(sha256sum "${BINARY_NAME}-${VERSION}-x86_64-unknown-linux-musl.tar.gz" | awk '{print $1}')
+          SHA_ARM_LINUX=$(sha256sum "${BINARY_NAME}-${VERSION}-aarch64-unknown-linux-musl.tar.gz" | awk '{print $1}')
+
+          echo "sha256_x86_64_darwin=${SHA_X86_DARWIN}" >> "$GITHUB_OUTPUT"
+          echo "sha256_aarch64_darwin=${SHA_ARM_DARWIN}" >> "$GITHUB_OUTPUT"
+          echo "sha256_x86_64_linux=${SHA_X86_LINUX}" >> "$GITHUB_OUTPUT"
+          echo "sha256_aarch64_linux=${SHA_ARM_LINUX}" >> "$GITHUB_OUTPUT"
+
+          sha256sum * > checksums.txt
+
+      - name: Create GitHub Release
+        uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
+        with:
+          files: |
+            artifacts/*
+          generate_release_notes: true
+
+  update-homebrew:
+    name: Update Homebrew Formula
+    needs: release
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+
+    steps:
+      - name: Checkout homebrew-tap
+        uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
+        with:
+          repository: J-Quants/homebrew-tap
+          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          path: homebrew-tap
+
+      - name: Update formula
+        env:
+          SHA_X86_DARWIN: ${{ needs.release.outputs.sha256_x86_64_darwin }}
+          SHA_ARM_DARWIN: ${{ needs.release.outputs.sha256_aarch64_darwin }}
+          SHA_X86_LINUX: ${{ needs.release.outputs.sha256_x86_64_linux }}
+          SHA_ARM_LINUX: ${{ needs.release.outputs.sha256_aarch64_linux }}
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          mkdir -p homebrew-tap/Formula
+
+          cat > homebrew-tap/Formula/jquants.rb << RUBY
+          class Jquants < Formula
+            desc "CLI tool for querying the J-Quants API V2 (Japanese stock market data)"
+            homepage "https://github.com/J-Quants/jquants-cli"
+            version "${VERSION}"
+            license "MIT"
+
+            on_macos do
+              on_intel do
+                url "https://github.com/J-Quants/jquants-cli/releases/download/v#{version}/jquants-#{version}-x86_64-apple-darwin.tar.gz"
+                sha256 "${SHA_X86_DARWIN}"
+              end
+              on_arm do
+                url "https://github.com/J-Quants/jquants-cli/releases/download/v#{version}/jquants-#{version}-aarch64-apple-darwin.tar.gz"
+                sha256 "${SHA_ARM_DARWIN}"
+              end
+            end
+
+            on_linux do
+              on_intel do
+                url "https://github.com/J-Quants/jquants-cli/releases/download/v#{version}/jquants-#{version}-x86_64-unknown-linux-musl.tar.gz"
+                sha256 "${SHA_X86_LINUX}"
+              end
+              on_arm do
+                url "https://github.com/J-Quants/jquants-cli/releases/download/v#{version}/jquants-#{version}-aarch64-unknown-linux-musl.tar.gz"
+                sha256 "${SHA_ARM_LINUX}"
+              end
+            end
+
+            def install
+              bin.install "jquants"
+            end
+
+            test do
+              assert_match version.to_s, shell_output("#{bin}/jquants --version")
+            end
+          end
+          RUBY
+
+      - name: Commit and push formula
+        run: |
+          TAG="${GITHUB_REF_NAME}"
+          VERSION="${TAG#v}"
+          cd homebrew-tap
+          git config user.name "github-actions[bot]"
+          git config user.email "github-actions[bot]@users.noreply.github.com"
+          git add Formula/jquants.rb
+          git diff --cached --quiet || git commit -m "chore: update jquants to v${VERSION}"
+          git push

@@ -1,0 +1,9 @@
+pub mod auth;
+pub mod cli;
+pub mod client;
+pub mod config;
+pub mod download;
+pub mod error;
+pub mod models;
+pub mod output;
+pub mod schema;

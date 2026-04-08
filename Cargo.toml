@@ -1,0 +1,55 @@
+[package]
+name = "jquants-cli"
+version = "1.0.0"
+edition = "2021"
+rust-version = "1.78"
+authors = ["J-Quants"]
+description = "A CLI tool for querying the J-Quants API V2"
+license = "MIT"
+repository = "https://github.com/J-Quants/jquants-cli"
+homepage = "https://github.com/J-Quants/jquants-cli"
+readme = "README.md"
+keywords = ["jquants", "stock", "finance", "cli", "japan"]
+categories = ["command-line-utilities"]
+exclude = [
+    ".github/",
+    "docs/",
+    "rust-toolchain.toml",
+    "CLAUDE.md",
+    "CONTRIBUTING.md",
+    "LICENSE"
+]
+
+[dependencies]
+clap = { version = "4", features = ["derive"] }
+clap_complete = "4"
+reqwest = { version = "0.12", default-features = false, features = ["json", "rustls-tls"] }
+serde = { version = "1", features = ["derive"] }
+serde_json = { version = "1", features = ["preserve_order"] }
+tokio = { version = "1", features = ["rt", "macros", "fs", "io-util", "net", "time"] }
+thiserror = "2"
+csv = "1"
+dotenvy = "0.15"
+comfy-table = "7"
+sha2 = "0.10"
+base64 = "0.22"
+rand = "0.9"
+dirs = "6"
+open = "5"
+include_dir = "0.7"
+arrow-json = { version = "58", default-features = false }
+arrow-schema = { version = "58", default-features = false }
+arrow-array = { version = "58", default-features = false }
+parquet = { version = "58", default-features = false, features = ["arrow"] }
+
+[lib]
+name = "jquants_cli"
+path = "src/lib.rs"
+
+[[bin]]
+name = "jquants"
+path = "src/main.rs"
+
+[profile.release]
+strip = true
+lto = true
