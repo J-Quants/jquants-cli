@@ -1,0 +1,8 @@
+# CODEOWNERS
+# リリースワークフローおよびパッケージ設定の変更にはメンテナーの承認が必要
+# @J-Quants/Developpers チームをあらかじめ Organization で作成してください
+
+.github/workflows/ @J-Quants/Developpers
+Cargo.toml         @J-Quants/Developpers
+Cargo.lock         @J-Quants/Developpers
+SECURITY.md        @J-Quants/Developpers

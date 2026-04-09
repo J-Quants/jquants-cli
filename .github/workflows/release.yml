@@ -120,6 +120,8 @@ jobs:
     permissions:
       contents: write
       actions: read
+      id-token: write
+      attestations: write
     outputs:
       sha256_x86_64_darwin: ${{ steps.checksums.outputs.sha256_x86_64_darwin }}
       sha256_aarch64_darwin: ${{ steps.checksums.outputs.sha256_aarch64_darwin }}
@@ -152,7 +154,12 @@ jobs:
           echo "sha256_x86_64_linux=${SHA_X86_LINUX}" >> "$GITHUB_OUTPUT"
           echo "sha256_aarch64_linux=${SHA_ARM_LINUX}" >> "$GITHUB_OUTPUT"
 
-          sha256sum * > checksums.txt
+          sha256sum *.tar.gz *.zip > checksums.txt
+
+      - name: Attest build provenance
+        uses: actions/attest-build-provenance@e8998f949152b193b063cb0ec769d69d929409be # v2.4.0
+        with:
+          subject-path: "artifacts/*.tar.gz,artifacts/*.zip"
 
       - name: Create GitHub Release
         uses: softprops/action-gh-release@153bb8e04406b158c6c84fc1615b65b24149a1fe # v2.6.1
@@ -165,15 +172,25 @@ jobs:
     name: Update Homebrew Formula
     needs: release
     runs-on: ubuntu-latest
+    environment: release
     permissions:
       contents: read
 
     steps:
+      - name: Generate GitHub App token
+        id: app-token
+        uses: actions/create-github-app-token@d72941d797fd3113feb6b93fd0dec494b13a2547 # v1.12.0
+        with:
+          app-id: ${{ secrets.TAP_APP_ID }}
+          private-key: ${{ secrets.TAP_APP_PRIVATE_KEY }}
+          owner: J-Quants
+          repositories: homebrew-tap
+
       - name: Checkout homebrew-tap
         uses: actions/checkout@de0fac2e4500dabe0009e67214ff5f5447ce83dd # v6.0.2
         with:
           repository: J-Quants/homebrew-tap
-          token: ${{ secrets.TAP_GITHUB_TOKEN }}
+          token: ${{ steps.app-token.outputs.token }}
           path: homebrew-tap
 
       - name: Update formula
@@ -226,13 +243,24 @@ jobs:
           end
           RUBY
 
-      - name: Commit and push formula
-        run: |
-          TAG="${GITHUB_REF_NAME}"
-          VERSION="${TAG#v}"
-          cd homebrew-tap
-          git config user.name "github-actions[bot]"
-          git config user.email "github-actions[bot]@users.noreply.github.com"
-          git add Formula/jquants.rb
-          git diff --cached --quiet || git commit -m "chore: update jquants to v${VERSION}"
-          git push
+      - name: Create Pull Request
+        uses: peter-evans/create-pull-request@22a9089034f40e5a961c8808d113e2c98fb63676 # v7.0.11
+        with:
+          token: ${{ steps.app-token.outputs.token }}
+          path: homebrew-tap
+          branch: update/jquants-${{ github.ref_name }}
+          title: "chore: update jquants to ${{ github.ref_name }}"
+          body: |
+            Automated formula update for jquants ${{ github.ref_name }}
+
+            Release: https://github.com/J-Quants/jquants-cli/releases/tag/${{ github.ref_name }}
+
+            SHA256 checksums:
+            - `x86_64-apple-darwin`: `${{ needs.release.outputs.sha256_x86_64_darwin }}`
+            - `aarch64-apple-darwin`: `${{ needs.release.outputs.sha256_aarch64_darwin }}`
+            - `x86_64-unknown-linux-musl`: `${{ needs.release.outputs.sha256_x86_64_linux }}`
+            - `aarch64-unknown-linux-musl`: `${{ needs.release.outputs.sha256_aarch64_linux }}`
+          labels: automated
+          commit-message: "chore: update jquants to ${{ github.ref_name }}"
+          committer: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
+          author: "github-actions[bot] <github-actions[bot]@users.noreply.github.com>"
