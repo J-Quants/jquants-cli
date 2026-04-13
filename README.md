@@ -98,15 +98,15 @@ jquants logout
 mkdir -p ~/.config/bash/completions
 jquants completion bash > ~/.config/bash/completions/jquants.bash
 source ~/.config/bash/completions/jquants.bash
-# ~/.bashrc に追記
+# ~/.bashrc に追記して永続化
 echo "source ~/.config/bash/completions/jquants.bash" >> ~/.bashrc
 
 # zsh
 mkdir -p ~/.zfunc
 jquants completion zsh > ~/.zfunc/_jquants
-# ~/.zshrc に追記
-fpath=(~/.zfunc $fpath)
-autoload -Uz compinit && compinit
+# ~/.zshrc に追記して永続化
+echo "fpath=(~/.zfunc $fpath)" >> ~/.zshrc
+echo "autoload -Uz compinit && compinit" >> ~/.zshrc
 
 # fish
 mkdir -p ~/.config/fish/completions
