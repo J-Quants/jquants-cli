@@ -101,7 +101,6 @@ source ~/.config/bash/completions/jquants.bash
 # ~/.bashrc に追記
 echo "source ~/.config/bash/completions/jquants.bash" >> ~/.bashrc
 
-
 # zsh
 mkdir -p ~/.zfunc
 jquants completion zsh > ~/.zfunc/_jquants
