@@ -2,7 +2,7 @@ use crate::models::{
     AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, FinsDetails,
     FinsDividend, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
-    TopixDailyBar,
+    TdBulk, TdFiles, TdList, TopixDailyBar,
 };
 use serde::Serialize;
 
@@ -2567,6 +2567,134 @@ impl SchemaInfo for BulkListItem {
     }
 }
 
+impl SchemaInfo for TdBulk {
+    fn endpoint_key() -> &'static str {
+        "td.bulk"
+    }
+    fn endpoint_description() -> &'static str {
+        "TDnet適時開示一括ダウンロードURL（過去5年分CSV gzip。URLの有効期限は15分）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "lastUpdated",
+                field_type: "string",
+                description: "CSVファイルの最終更新日時（ISO 8601形式）",
+            },
+            FieldSchema {
+                name: "url",
+                field_type: "string",
+                description: "gzip圧縮CSVのダウンロードURL（有効期限15分）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        2
+    }
+}
+
+impl SchemaInfo for TdFiles {
+    fn endpoint_key() -> &'static str {
+        "td.files"
+    }
+    fn endpoint_description() -> &'static str {
+        "TDnet適時開示ファイルURL取得（PDF/XBRL。URLの有効期限は15分）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "discNo",
+                field_type: "string",
+                description: "開示番号（14桁）",
+            },
+            FieldSchema {
+                name: "files.pdf",
+                field_type: "string?",
+                description: "全文PDF ダウンロードURL（有効期限15分）",
+            },
+            FieldSchema {
+                name: "files.summaryPdf",
+                field_type: "string?",
+                description: "サマリPDF ダウンロードURL（有効期限15分）",
+            },
+            FieldSchema {
+                name: "files.xbrl",
+                field_type: "string?",
+                description: "XBRLファイル ダウンロードURL（有効期限15分）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        4
+    }
+}
+
+impl SchemaInfo for TdList {
+    fn endpoint_key() -> &'static str {
+        "td.list"
+    }
+    fn endpoint_description() -> &'static str {
+        "TDnet適時開示インデックス一覧（開示番号・日時・タイトル・書類タイプ等）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "DiscNo",
+                field_type: "string",
+                description: "開示番号（14桁）",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "銘柄コード",
+            },
+            FieldSchema {
+                name: "Name",
+                field_type: "string",
+                description: "会社名",
+            },
+            FieldSchema {
+                name: "DiscDate",
+                field_type: "string",
+                description: "開示日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "DiscTime",
+                field_type: "string",
+                description: "開示時刻 (HH:MM)",
+            },
+            FieldSchema {
+                name: "Title",
+                field_type: "string",
+                description: "開示タイトル",
+            },
+            FieldSchema {
+                name: "DiscStatus",
+                field_type: "string?",
+                description: "取扱属性（null=通常/revision=修正/delete=削除）",
+            },
+            FieldSchema {
+                name: "RevNo",
+                field_type: "string",
+                description: "開示履歴番号（1〜99）",
+            },
+            FieldSchema {
+                name: "DiscItems",
+                field_type: "array",
+                description: "公開項目コードリスト",
+            },
+            FieldSchema {
+                name: "Docs",
+                field_type: "array",
+                description: "書類タイプ（g=PDF/s=サマリー/x=XBRL）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        10
+    }
+}
+
 // ── レジストリ関数 ────────────────────────────────────────────────────────────
 
 fn make_summary<T: SchemaInfo>() -> EndpointSchema {
@@ -2618,6 +2746,8 @@ register_endpoints! {
     TopixDailyBar, IndexDailyBar;
     // bulk グループ
     BulkListItem;
+    // td グループ
+    TdBulk, TdFiles, TdList;
 }
 
 // ── テスト ────────────────────────────────────────────────────────────────────
@@ -2628,7 +2758,7 @@ mod tests {
 
     #[test]
     fn test_all_endpoints_count() {
-        assert_eq!(all_endpoint_schemas().len(), 21);
+        assert_eq!(all_endpoint_schemas().len(), 24);
     }
 
     #[test]

@@ -3,13 +3,15 @@ use include_dir::{include_dir, Dir};
 use jquants_cli::auth::{login, logout};
 use jquants_cli::cli::{
     BulkCommands, Cli, Commands, DerivativesCommands, EquitiesCommands, FinsCommands,
-    IndicesCommands, MarketsCommands, OutputFormat, SkillsCommands,
+    IndicesCommands, MarketsCommands, OutputFormat, SkillsCommands, TdCommands,
 };
 use jquants_cli::client::JQuantsClient;
 use jquants_cli::config::Config;
-use jquants_cli::download::handle_bulk_download;
+use jquants_cli::download::{download_bulk_file, download_td_files, handle_bulk_download};
 use jquants_cli::error;
-use jquants_cli::output::{output, output_fins_details, output_margin_alert, FieldSelection};
+use jquants_cli::output::{
+    output, output_fins_details, output_margin_alert, output_td_files, FieldSelection,
+};
 use jquants_cli::schema::{all_endpoint_keys, all_endpoint_schemas, lookup_endpoint};
 
 static SKILL_DIR: Dir<'_> = include_dir!("$CARGO_MANIFEST_DIR/.claude/skills/jquants-cli-usage");
@@ -392,6 +394,62 @@ async fn run_indices(
     Ok(())
 }
 
+async fn run_td(
+    client: &JQuantsClient,
+    out_fmt: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+    command: TdCommands,
+) -> Result<(), error::AppError> {
+    match command {
+        TdCommands::List {
+            date,
+            code,
+            from,
+            to,
+            disc_items,
+            cursor,
+        } => {
+            let (results, response_cursor) = client
+                .get_td_list(
+                    date.as_deref(),
+                    code.as_deref(),
+                    from.as_deref(),
+                    to.as_deref(),
+                    disc_items.as_deref(),
+                    cursor.as_deref(),
+                )
+                .await?;
+            output(&results, out_fmt, save, fields)?;
+            if let Some(c) = response_cursor {
+                eprintln!("cursor: {c}");
+            }
+        }
+        TdCommands::Files {
+            disc_no,
+            docs,
+            download,
+        } => {
+            let result = client.get_td_files(&disc_no, docs.as_deref()).await?;
+            if download {
+                download_td_files(client.http_client(), &result.files, &result.disc_no).await?;
+            } else {
+                output_td_files(&[result], out_fmt, save, fields)?;
+            }
+        }
+        TdCommands::Bulk { download } => {
+            let result = client.get_td_bulk().await?;
+            if download {
+                let filename = download_bulk_file(client.http_client(), &result.url).await?;
+                eprintln!("Downloaded: {}", filename);
+            } else {
+                output(&[result], out_fmt, save, fields)?;
+            }
+        }
+    }
+    Ok(())
+}
+
 fn run_schema(
     out_fmt: &OutputFormat,
     save: &Option<String>,
@@ -555,6 +613,9 @@ async fn run() -> Result<(), error::AppError> {
         }
         Commands::Bulk { command } => {
             run_bulk(&client, &cli.output, &cli.save, &fields, command).await?;
+        }
+        Commands::Td { command } => {
+            run_td(&client, &cli.output, &cli.save, &fields, command).await?;
         }
         Commands::Schema { .. } => unreachable!("Schema command is handled above"),
         Commands::Skills { .. } => unreachable!("Skills commands are handled above"),

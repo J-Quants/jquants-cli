@@ -4,7 +4,7 @@ use crate::models::{
     AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, FinsDetails,
     FinsDividend, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
-    TopixDailyBar,
+    TdBulk, TdFiles, TdList, TopixDailyBar,
 };
 use arrow_json::reader::infer_json_schema_from_seekable;
 use arrow_schema::Schema;
@@ -420,6 +420,52 @@ impl TableDisplay for FinsDetails {
             self.disc_no.clone(),
             self.doc_type.clone(),
             fins_fs_keys_summary(&self.fs),
+        ]
+    }
+}
+
+impl TableDisplay for TdBulk {
+    fn table_headers() -> Vec<&'static str> {
+        vec!["LastUpdated", "URL"]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![self.last_updated.clone(), self.url.clone()]
+    }
+}
+
+impl TableDisplay for TdFiles {
+    fn table_headers() -> Vec<&'static str> {
+        vec!["DiscNo", "PDF", "SummaryPDF", "XBRL"]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.disc_no.clone(),
+            opt_display(self.files.pdf.as_deref()),
+            opt_display(self.files.summary_pdf.as_deref()),
+            opt_display(self.files.xbrl.as_deref()),
+        ]
+    }
+}
+
+impl TableDisplay for TdList {
+    fn table_headers() -> Vec<&'static str> {
+        vec![
+            "DiscDate",
+            "DiscTime",
+            "Code",
+            "Name",
+            "Title",
+            "DiscStatus",
+        ]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.disc_date.clone(),
+            self.disc_time.clone(),
+            self.code.clone(),
+            self.name.clone(),
+            self.title.clone(),
+            opt_display(self.disc_status.as_deref()),
         ]
     }
 }
@@ -850,6 +896,34 @@ pub fn output_fins_details(
                 item.disc_no.as_str(),
                 item.doc_type.as_str(),
                 fs_str.as_str(),
+            ])?;
+        }
+        wtr.flush()?;
+        saved_notice(save);
+        Ok(())
+    } else {
+        output(results, format, save, fields)
+    }
+}
+
+pub fn output_td_files(
+    results: &[TdFiles],
+    format: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+) -> Result<(), AppError> {
+    if let Some(ref field_list) = fields {
+        return output_filtered(results, field_list, format, save);
+    }
+    if let OutputFormat::Csv = format {
+        let mut wtr = csv::Writer::from_writer(make_writer(save)?);
+        wtr.write_record(["discNo", "pdf", "summaryPdf", "xbrl"])?;
+        for item in results {
+            wtr.write_record([
+                item.disc_no.as_str(),
+                item.files.pdf.as_deref().unwrap_or(""),
+                item.files.summary_pdf.as_deref().unwrap_or(""),
+                item.files.xbrl.as_deref().unwrap_or(""),
             ])?;
         }
         wtr.flush()?;

@@ -46,6 +46,8 @@ impl Deref for FlexString {
 pub struct ApiResponse<T> {
     pub data: Vec<T>,
     pub pagination_key: Option<String>,
+    #[serde(default)]
+    pub cursor: Option<String>,
 }
 
 // ── 個別データ型 ─────────────────────────────────────────────────────────────
@@ -1057,6 +1059,54 @@ pub struct ShortSaleReport {
     pub notes: String,
 }
 
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TdList {
+    #[serde(rename = "DiscNo")]
+    pub disc_no: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "Name")]
+    pub name: String,
+    #[serde(rename = "DiscDate")]
+    pub disc_date: String,
+    #[serde(rename = "DiscTime")]
+    pub disc_time: String,
+    #[serde(rename = "Title")]
+    pub title: String,
+    #[serde(rename = "DiscStatus")]
+    pub disc_status: Option<String>,
+    #[serde(rename = "RevNo")]
+    pub rev_no: String,
+    #[serde(rename = "DiscItems")]
+    pub disc_items: Vec<String>,
+    #[serde(rename = "Docs")]
+    pub docs: Vec<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TdBulk {
+    #[serde(rename = "lastUpdated")]
+    pub last_updated: String,
+    #[serde(rename = "url")]
+    pub url: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TdFilesInner {
+    pub pdf: Option<String>,
+    #[serde(rename = "summaryPdf")]
+    pub summary_pdf: Option<String>,
+    pub xbrl: Option<String>,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct TdFiles {
+    #[serde(rename = "discNo")]
+    pub disc_no: String,
+    #[serde(rename = "files")]
+    pub files: TdFilesInner,
+}
+
 #[cfg(test)]
 mod tests {
     use super::*;
@@ -1104,6 +1154,24 @@ mod tests {
             response.pagination_key.as_deref(),
             Some("next_page_token_abc123")
         );
+        assert!(response.cursor.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_with_cursor() {
+        let json = r#"{
+            "data": [],
+            "cursor": "eyJkIjoiMjAyNS0wNC0wMSIsInQiOiIyMDI1LTA0LTAxVDA4OjAwOjAwWiMyMDI1MDQwMTEzMDEwMCJ9"
+        }"#;
+
+        let response: ApiResponse<StockMaster> = serde_json::from_str(json).unwrap();
+        assert_eq!(
+            response.cursor.as_deref(),
+            Some(
+                "eyJkIjoiMjAyNS0wNC0wMSIsInQiOiIyMDI1LTA0LTAxVDA4OjAwOjAwWiMyMDI1MDQwMTEzMDEwMCJ9"
+            )
+        );
+        assert!(response.pagination_key.is_none());
     }
 
     #[test]
@@ -1249,6 +1317,97 @@ mod tests {
         assert_eq!(response.data[0].code, "27800");
         assert_eq!(response.data[0].open, 1000.0);
         assert!(response.pagination_key.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_td_bulk_response() {
+        let json = r#"{
+            "lastUpdated": "2025-04-01T00:00:00Z",
+            "url": "https://example.com/td-bulk.csv.gz"
+        }"#;
+
+        let item: TdBulk = serde_json::from_str(json).unwrap();
+        assert_eq!(item.last_updated, "2025-04-01T00:00:00Z");
+        assert_eq!(item.url, "https://example.com/td-bulk.csv.gz");
+    }
+
+    #[test]
+    fn test_deserialize_td_files_response() {
+        let json = r#"{
+            "discNo": "20250401130100",
+            "files": {
+                "pdf": "https://example.com/file.pdf",
+                "summaryPdf": null,
+                "xbrl": "https://example.com/file.xbrl"
+            }
+        }"#;
+
+        let item: TdFiles = serde_json::from_str(json).unwrap();
+        assert_eq!(item.disc_no, "20250401130100");
+        assert_eq!(
+            item.files.pdf.as_deref(),
+            Some("https://example.com/file.pdf")
+        );
+        assert!(item.files.summary_pdf.is_none());
+        assert!(item.files.xbrl.is_some());
+    }
+
+    #[test]
+    fn test_deserialize_td_list_response() {
+        let json = r#"{
+            "data": [
+                {
+                    "DiscNo": "20250401123456",
+                    "Code": "86970",
+                    "Name": "日本取引所グループ",
+                    "DiscDate": "2025-04-01",
+                    "DiscTime": "09:00",
+                    "Title": "決算短信",
+                    "DiscStatus": null,
+                    "RevNo": "1",
+                    "DiscItems": ["140120"],
+                    "Docs": ["g", "s"]
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<TdList> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        let item = &response.data[0];
+        assert_eq!(item.disc_no, "20250401123456");
+        assert_eq!(item.code, "86970");
+        assert_eq!(item.disc_date, "2025-04-01");
+        assert_eq!(item.disc_status, None);
+        assert_eq!(item.rev_no, "1");
+        assert_eq!(item.disc_items, vec!["140120"]);
+        assert_eq!(item.docs, vec!["g", "s"]);
+        assert!(response.pagination_key.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_td_list_with_disc_status() {
+        let json = r#"{
+            "data": [
+                {
+                    "DiscNo": "20250401123456",
+                    "Code": "86970",
+                    "Name": "日本取引所グループ",
+                    "DiscDate": "2025-04-01",
+                    "DiscTime": "09:00",
+                    "Title": "決算短信（修正）",
+                    "DiscStatus": "revision",
+                    "RevNo": "2",
+                    "DiscItems": [],
+                    "Docs": []
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<TdList> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data[0].disc_status, Some("revision".to_string()));
+        assert_eq!(response.data[0].rev_no, "2");
     }
 
     #[test]
