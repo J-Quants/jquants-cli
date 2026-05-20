@@ -1365,7 +1365,7 @@ mod tests {
                     "Title": "決算短信",
                     "DiscStatus": null,
                     "RevNo": "1",
-                    "DiscItems": ["140120"],
+                    "DiscItems": ["11101"],
                     "Docs": ["g", "s"]
                 }
             ],
@@ -1380,7 +1380,7 @@ mod tests {
         assert_eq!(item.disc_date, "2025-04-01");
         assert_eq!(item.disc_status, None);
         assert_eq!(item.rev_no, "1");
-        assert_eq!(item.disc_items, vec!["140120"]);
+        assert_eq!(item.disc_items, vec!["11101"]);
         assert_eq!(item.docs, vec!["g", "s"]);
         assert!(response.pagination_key.is_none());
     }

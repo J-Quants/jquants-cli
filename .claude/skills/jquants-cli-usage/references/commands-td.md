@@ -16,7 +16,7 @@ jquants td list --code 86970
 jquants td list --code 86970 --from 2025-01-01 --to 2025-03-31
 
 # 公開項目コードでフィルタ（AND条件、カンマ区切り）
-jquants td list --date 2025-04-01 --disc-items 140120
+jquants td list --date 2025-04-01 --disc-items 11101
 
 # ページネーションカーソル指定（当日データのリアルタイム取得に使用）
 jquants td list --date 2025-04-01 --cursor <cursor_value>

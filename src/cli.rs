@@ -558,7 +558,7 @@ Note: --date と --code はいずれか一方を指定。--from/--to は --code 
 Examples:
   jquants td list --date 2025-04-01
   jquants td list --code 86970 --from 2025-01-01 --to 2025-03-31
-  jquants td list --date 2025-04-01 --disc-items 140120")]
+  jquants td list --date 2025-04-01 --disc-items 11101")]
     List {
         /// Disclosure date (YYYYMMDD or YYYY-MM-DD)
         #[arg(long)]
