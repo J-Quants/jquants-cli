@@ -4,7 +4,7 @@ use crate::models::{
     AmBar, ApiErrorResponse, ApiResponse, Breakdown, BulkGetResponse, BulkListItem, Calendar,
     DailyBar, EarningsCalendar, FinsDetails, FinsDividend, FinsSummary, FuturesBar, IndexDailyBar,
     InvestorType, MarginAlert, MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio,
-    ShortSaleReport, StockMaster, TopixDailyBar,
+    ShortSaleReport, StockMaster, TdBulk, TdFiles, TdList, TopixDailyBar,
 };
 use reqwest::Client;
 
@@ -336,6 +336,112 @@ impl JQuantsClient {
         ]);
         self.fetch_paginated("/markets/short-sale-report", params)
             .await
+    }
+
+    pub async fn get_td_bulk(&self) -> Result<TdBulk, AppError> {
+        let url = format!("{}/td/bulk", self.base_url);
+
+        let response = self
+            .client
+            .get(&url)
+            .header(HEADER_API_KEY, &self.api_key)
+            .send()
+            .await?;
+
+        let status = response.status().as_u16();
+        if status == 200 {
+            let text = response.text().await?;
+            serde_json::from_str(&text).map_err(|e| AppError::Decode {
+                source: e,
+                body: text.chars().take(500).collect(),
+            })
+        } else {
+            Err(Self::parse_api_error(response, status).await)
+        }
+    }
+
+    pub async fn get_td_files(
+        &self,
+        disc_no: &str,
+        docs: Option<&str>,
+    ) -> Result<TdFiles, AppError> {
+        let params = build_params(&[("discNo", Some(disc_no)), ("docs", docs)]);
+        let url = format!("{}/td/files", self.base_url);
+
+        let response = self
+            .client
+            .get(&url)
+            .header(HEADER_API_KEY, &self.api_key)
+            .query(&params)
+            .send()
+            .await?;
+
+        let status = response.status().as_u16();
+        if status == 200 {
+            let text = response.text().await?;
+            serde_json::from_str(&text).map_err(|e| AppError::Decode {
+                source: e,
+                body: text.chars().take(500).collect(),
+            })
+        } else {
+            Err(Self::parse_api_error(response, status).await)
+        }
+    }
+
+    pub async fn get_td_list(
+        &self,
+        date: Option<&str>,
+        code: Option<&str>,
+        from: Option<&str>,
+        to: Option<&str>,
+        disc_items: Option<&str>,
+        cursor: Option<&str>,
+    ) -> Result<(Vec<TdList>, Option<String>), AppError> {
+        let params = build_params(&[
+            ("date", date),
+            ("code", code),
+            ("from", from),
+            ("to", to),
+            ("discItems", disc_items),
+            ("cursor", cursor),
+        ]);
+        let mut all_results: Vec<TdList> = Vec::new();
+        let mut pagination_key: Option<String> = None;
+        let mut response_cursor: Option<String> = None;
+        let url = format!("{}/td/list", self.base_url);
+
+        loop {
+            let mut request = self
+                .client
+                .get(&url)
+                .header(HEADER_API_KEY, &self.api_key)
+                .query(&params);
+            if let Some(ref pk) = pagination_key {
+                request = request.query(&[("pagination_key", pk.as_str())]);
+            }
+            let response = request.send().await?;
+            let status = response.status().as_u16();
+            if status == 200 {
+                let text = response.text().await?;
+                let body: ApiResponse<TdList> =
+                    serde_json::from_str(&text).map_err(|e| AppError::Decode {
+                        source: e,
+                        body: text.chars().take(500).collect(),
+                    })?;
+                all_results.extend(body.data);
+                response_cursor = body.cursor;
+                match body.pagination_key {
+                    Some(key) => pagination_key = Some(key),
+                    None => break,
+                }
+            } else if status == 210 {
+                break;
+            } else {
+                return Err(Self::parse_api_error(response, status).await);
+            }
+        }
+
+        Ok((all_results, response_cursor))
     }
 
     pub async fn get_bulk(

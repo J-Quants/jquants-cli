@@ -147,6 +147,17 @@ Examples:
         #[command(subcommand)]
         command: IndicesCommands,
     },
+    /// TDnet/適時開示 API endpoints (適時開示)
+    #[command(name = "td")]
+    #[command(after_long_help = "\
+Examples:
+  jquants td list --date 2025-04-01        # 指定日の適時開示一覧
+  jquants td list --code 86970             # 銘柄コード指定（過去5年）
+  jquants td list --code 86970 --from 2025-01-01 --to 2025-03-31  # 期間指定")]
+    Td {
+        #[command(subcommand)]
+        command: TdCommands,
+    },
     /// Show API response schema
     #[command(
         long_about = "Show API response schema for endpoints (エンドポイントのスキーマ情報)"
@@ -531,6 +542,93 @@ pub enum IndicesCommands {
         /// End date (YYYY-MM-DD)
         #[arg(long)]
         to: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
+pub enum TdCommands {
+    /// Fetch TDnet disclosure index (適時開示インデックス一覧)
+    #[command(
+        long_about = "Fetch TDnet disclosure index list (適時開示インデックス情報一覧取得). Requires TDnet add-on."
+    )]
+    #[command(after_long_help = "\
+Note: --date と --code はいずれか一方を指定。--from/--to は --code との組み合わせで使用。
+      --disc-items はカンマ区切りで複数の公開項目コードをAND条件で指定可能。
+
+Examples:
+  jquants td list --date 2025-04-01
+  jquants td list --code 86970 --from 2025-01-01 --to 2025-03-31
+  jquants td list --date 2025-04-01 --disc-items 11101")]
+    List {
+        /// Disclosure date (YYYYMMDD or YYYY-MM-DD)
+        #[arg(long)]
+        date: Option<String>,
+
+        /// Stock code (e.g., 86970 or 8697)
+        #[arg(long)]
+        code: Option<String>,
+
+        /// Start date (YYYY-MM-DD, use with --code)
+        #[arg(long)]
+        from: Option<String>,
+
+        /// End date (YYYY-MM-DD, use with --code)
+        #[arg(long)]
+        to: Option<String>,
+
+        /// Disclosure item codes, comma-separated AND filter (公開項目コード)
+        #[arg(long)]
+        disc_items: Option<String>,
+
+        /// Cursor for pagination (ページネーション用カーソル)
+        #[arg(long)]
+        cursor: Option<String>,
+    },
+    /// Fetch TDnet disclosure file download URLs (適時開示ファイルURL取得)
+    #[command(
+        long_about = "Fetch download URLs for TDnet disclosure files (PDF/XBRL). URLs expire in 15 minutes. Requires TDnet add-on."
+    )]
+    #[command(after_long_help = "\
+Note: --disc-no は必須。生成されたURLの有効期限は15分。
+      --docs で取得するファイル種類を絞り込み可能（g=PDF全文/s=サマリPDF/x=XBRL）。
+      --download でファイルを直接ダウンロード（pdf_<discNo>.pdf 等のファイル名で保存）。
+
+Examples:
+  jquants td files --disc-no 20250401130100
+  jquants td files --disc-no 20250401130100 --docs g
+  jquants td files --disc-no 20250401130100 --download
+  jquants td files --disc-no 20250401130100 --docs g --download
+  jquants --output json td files --disc-no 20250401130100")]
+    Files {
+        /// Disclosure number (14-digit, required)
+        #[arg(long, required = true)]
+        disc_no: String,
+
+        /// File type filter (g=PDF全文, s=サマリPDF, x=XBRL)
+        #[arg(long)]
+        docs: Option<String>,
+
+        /// Download files directly (ファイルを直接ダウンロード)
+        #[arg(long)]
+        download: bool,
+    },
+    /// Fetch TDnet bulk CSV download URL (適時開示一括ダウンロード)
+    #[command(
+        long_about = "Fetch download URL for bulk TDnet disclosure CSV (past 5 years, gzip). URL expires in 15 minutes. Requires TDnet add-on."
+    )]
+    #[command(after_long_help = "\
+Note: パラメータ不要。生成されたURLの有効期限は15分。
+      CSVには DiscNo/Code/Name/DiscDate/DiscTime/Title/DiscStatus/RevNo/DiscItems/Docs が含まれる。
+      --download でCSVファイルを直接ダウンロード。
+
+Examples:
+  jquants td bulk
+  jquants --output json td bulk
+  jquants td bulk --download")]
+    Bulk {
+        /// Download CSV file directly (CSVファイルを直接ダウンロード)
+        #[arg(long)]
+        download: bool,
     },
 }
 

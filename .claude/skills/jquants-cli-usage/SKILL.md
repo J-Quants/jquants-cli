@@ -152,6 +152,13 @@ jquants --output json schema    # JSON 形式で出力
 | TOPIX指数四本値 | `jquants idx daily-topix` | 日次 16:30頃 |
 | 指数四本値 | `jquants idx daily` | 日次 16:30頃 |
 
+### 適時開示（td）※ TDnet/適時開示情報アドオン必要
+| やりたいこと | コマンド | 更新時刻 |
+|---|---|---|
+| 適時開示インデックス一覧 | `jquants td list` | 随時更新 |
+| 適時開示ファイルURL取得 | `jquants td files` | 随時更新 |
+| 適時開示一括ダウンロードURL取得 | `jquants td bulk` | 日次 26:00頃 |
+
 ## Category Reference Files
 
 各カテゴリの詳細なコマンド構文・フラグ・例はリファレンスファイルに記載されている。**Quick Reference の情報で十分な場合はリファレンスを読む必要はない。**
@@ -166,6 +173,7 @@ jquants --output json schema    # JSON 形式で出力
 | fins | references/commands-fins.md | `fins details` の FS フィールド（JSON出力必須） |
 | idx | references/commands-idx.md | 指数コード指定・TOPIX |
 | bulk | references/commands-bulk.md | バルクDLの判断基準・ワークフロー・エンドポイント一覧 |
+| td | references/commands-td.md | `--cursor` によるリアルタイムポーリング・`--download` の使い方・ファイル名規則 |
 | plans | references/plans.md | プラン別 API 可否・取得可能期間・アドオン情報 |
 | schedule | references/data-update-schedule.md | データの鮮度判断・更新タイミングの詳細・シナリオ別の判断例が必要なとき |
 
@@ -295,6 +303,7 @@ J-Quants API はプランごとに1分あたりのリクエスト上限が設定
 | **Standard** | `mkt margin-interest`, `mkt short-ratio`, `mkt short-sale-report`, `mkt margin-alert`, `idx daily`, `deriv options-225` |
 | **Premium** | `eq am`, `fins details`, `fins dividend`, `mkt breakdown`, `deriv futures`, `deriv options` |
 | **Add-on** | `eq minute`, `eq trades`（分足・ティック専用アドオン契約が必要） |
+| **Add-on** | `td list`, `td files`, `td bulk`（TDnet/適時開示情報アドオン契約が必要） |
 
 > **プラン階層:** Free < Light < Standard < Premium（上位プランは下位の全 API を含む）
 
