@@ -470,11 +470,13 @@ pub enum FinsCommands {
     #[command(after_long_help = "\
 Note: FS フィールドはテーブル表示では \"N items\" と略される。
       完全な財務諸表データ（BS/PL/CF）を取得するには --output json を使用。
+      --cursor を使うと前回取得以降の差分のみ取得できる（レスポンスの cursor を次回の --cursor に指定）。
 
 Examples:
   jquants fins details --code 86970                # テーブル表示
   jquants --output json fins details --code 86970  # 完全な財務データをJSON出力
-  jquants fins details --date 2022-01-05           # 日付指定")]
+  jquants fins details --date 2022-01-05           # 日付指定
+  jquants fins details --date 2022-01-05 --cursor eyJ...  # 差分取得")]
     Details {
         /// Stock code
         #[arg(long)]
@@ -483,6 +485,10 @@ Examples:
         /// Disclosure date (YYYY-MM-DD)
         #[arg(long)]
         date: Option<String>,
+
+        /// Cursor for differential fetching (差分取得用カーソル)
+        #[arg(long)]
+        cursor: Option<String>,
     },
     /// Fetch dividend data (配当金情報)
     Dividend {
@@ -503,6 +509,13 @@ Examples:
         to: Option<String>,
     },
     /// Fetch financial summary (財務情報サマリー)
+    #[command(after_long_help = "\
+Note: --cursor を使うと前回取得以降の差分のみ取得できる（レスポンスの cursor を次回の --cursor に指定）。
+
+Examples:
+  jquants fins summary --date 2025-01-06           # 日付指定
+  jquants fins summary --code 86970                # 銘柄指定
+  jquants fins summary --date 2025-01-06 --cursor eyJ...  # 差分取得")]
     Summary {
         /// Stock code
         #[arg(long)]
@@ -510,6 +523,10 @@ Examples:
         /// Disclosure date (YYYY-MM-DD)
         #[arg(long)]
         date: Option<String>,
+
+        /// Cursor for differential fetching (差分取得用カーソル)
+        #[arg(long)]
+        cursor: Option<String>,
     },
 }
 

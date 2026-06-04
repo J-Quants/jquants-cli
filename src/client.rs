@@ -228,9 +228,46 @@ impl JQuantsClient {
         &self,
         code: Option<&str>,
         date: Option<&str>,
-    ) -> Result<Vec<FinsDetails>, AppError> {
-        let params = build_params(&[("code", code), ("date", date)]);
-        self.fetch_paginated("/fins/details", params).await
+        cursor: Option<&str>,
+    ) -> Result<(Vec<FinsDetails>, Option<String>), AppError> {
+        let params = build_params(&[("code", code), ("date", date), ("cursor", cursor)]);
+        let mut all_results: Vec<FinsDetails> = Vec::new();
+        let mut pagination_key: Option<String> = None;
+        let mut response_cursor: Option<String> = None;
+        let url = format!("{}/fins/details", self.base_url);
+
+        loop {
+            let mut request = self
+                .client
+                .get(&url)
+                .header(HEADER_API_KEY, &self.api_key)
+                .query(&params);
+            if let Some(ref pk) = pagination_key {
+                request = request.query(&[("pagination_key", pk.as_str())]);
+            }
+            let response = request.send().await?;
+            let status = response.status().as_u16();
+            if status == 200 {
+                let text = response.text().await?;
+                let body: ApiResponse<FinsDetails> =
+                    serde_json::from_str(&text).map_err(|e| AppError::Decode {
+                        source: e,
+                        body: text.chars().take(500).collect(),
+                    })?;
+                all_results.extend(body.data);
+                response_cursor = body.cursor;
+                match body.pagination_key {
+                    Some(key) => pagination_key = Some(key),
+                    None => break,
+                }
+            } else if status == 210 {
+                break;
+            } else {
+                return Err(Self::parse_api_error(response, status).await);
+            }
+        }
+
+        Ok((all_results, response_cursor))
     }
 
     pub async fn get_fins_dividend(
@@ -248,9 +285,46 @@ impl JQuantsClient {
         &self,
         code: Option<&str>,
         date: Option<&str>,
-    ) -> Result<Vec<FinsSummary>, AppError> {
-        let params = build_params(&[("code", code), ("date", date)]);
-        self.fetch_paginated("/fins/summary", params).await
+        cursor: Option<&str>,
+    ) -> Result<(Vec<FinsSummary>, Option<String>), AppError> {
+        let params = build_params(&[("code", code), ("date", date), ("cursor", cursor)]);
+        let mut all_results: Vec<FinsSummary> = Vec::new();
+        let mut pagination_key: Option<String> = None;
+        let mut response_cursor: Option<String> = None;
+        let url = format!("{}/fins/summary", self.base_url);
+
+        loop {
+            let mut request = self
+                .client
+                .get(&url)
+                .header(HEADER_API_KEY, &self.api_key)
+                .query(&params);
+            if let Some(ref pk) = pagination_key {
+                request = request.query(&[("pagination_key", pk.as_str())]);
+            }
+            let response = request.send().await?;
+            let status = response.status().as_u16();
+            if status == 200 {
+                let text = response.text().await?;
+                let body: ApiResponse<FinsSummary> =
+                    serde_json::from_str(&text).map_err(|e| AppError::Decode {
+                        source: e,
+                        body: text.chars().take(500).collect(),
+                    })?;
+                all_results.extend(body.data);
+                response_cursor = body.cursor;
+                match body.pagination_key {
+                    Some(key) => pagination_key = Some(key),
+                    None => break,
+                }
+            } else if status == 210 {
+                break;
+            } else {
+                return Err(Self::parse_api_error(response, status).await);
+            }
+        }
+
+        Ok((all_results, response_cursor))
     }
 
     pub async fn get_topix_daily_bars(

@@ -328,11 +328,14 @@ async fn run_fins(
     command: FinsCommands,
 ) -> Result<(), error::AppError> {
     match command {
-        FinsCommands::Details { code, date } => {
-            let results = client
-                .get_fins_details(code.as_deref(), date.as_deref())
+        FinsCommands::Details { code, date, cursor } => {
+            let (results, response_cursor) = client
+                .get_fins_details(code.as_deref(), date.as_deref(), cursor.as_deref())
                 .await?;
             output_fins_details(&results, out_fmt, save, fields)?;
+            if let Some(c) = response_cursor {
+                eprintln!("cursor: {c}");
+            }
         }
         FinsCommands::Dividend {
             code,
@@ -350,11 +353,14 @@ async fn run_fins(
                 .await?;
             output(&results, out_fmt, save, fields)?;
         }
-        FinsCommands::Summary { code, date } => {
-            let results = client
-                .get_fins_summary(code.as_deref(), date.as_deref())
+        FinsCommands::Summary { code, date, cursor } => {
+            let (results, response_cursor) = client
+                .get_fins_summary(code.as_deref(), date.as_deref(), cursor.as_deref())
                 .await?;
             output(&results, out_fmt, save, fields)?;
+            if let Some(c) = response_cursor {
+                eprintln!("cursor: {c}");
+            }
         }
     }
     Ok(())
