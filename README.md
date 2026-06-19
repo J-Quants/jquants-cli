@@ -95,15 +95,29 @@ jquants logout
 
 ```sh
 # bash
+mkdir -p ~/.config/bash/completions
 jquants completion bash > ~/.config/bash/completions/jquants.bash
+# 実行シェルで補完を有効化
+source ~/.config/bash/completions/jquants.bash
+# ~/.bashrc に追記して永続化
+echo "source ~/.config/bash/completions/jquants.bash" >> ~/.bashrc
 
 # zsh
+mkdir -p ~/.zfunc
 jquants completion zsh > ~/.zfunc/_jquants
+# 実行シェルで補完を有効化
 fpath=(~/.zfunc $fpath)
 autoload -Uz compinit && compinit
+# ~/.zshrc に追記して永続化 (すでに同様の設定がある場合は不要)
+echo "fpath=(~/.zfunc $fpath)" >> ~/.zshrc
+echo "autoload -Uz compinit && compinit" >> ~/.zshrc
 
 # fish
+mkdir -p ~/.config/fish/completions
+# 永続化
 jquants completion fish > ~/.config/fish/completions/jquants.fish
+# 実行シェルで補完を有効化
+source ~/.config/fish/completions/jquants.fish
 ```
 
 ## AI Agent 連携
