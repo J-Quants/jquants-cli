@@ -120,6 +120,22 @@ Examples:
         #[command(subcommand)]
         command: DerivativesCommands,
     },
+    /// EDINET-related API endpoints (EDINET書類由来データ)
+    #[command(name = "edinet")]
+    #[command(after_long_help = "\
+Examples:
+  jquants edinet major-shareholders --code 86970              # 大株主状況（有報）
+  jquants edinet cross-shareholdings --edinet-code E02367     # 政策保有株式（有報）
+  jquants edinet large-volume-shareholders --date 2026-07-01  # 指定日提出の大量保有報告書
+  jquants edinet major-shareholders                           # API実行日提出分の一覧
+
+Note: いずれも Standard プラン以上。--edinet-code と --code の同時指定は不可。
+      ネスト項目（Hldrs / Report 等）はテーブル表示では件数に略される。--output json で完全表示。
+      指定なしの全件取得は提出が多い日にデータ量が大きくなるため、--date や --code での絞り込みを推奨。")]
+    Edinet {
+        #[command(subcommand)]
+        command: EdinetCommands,
+    },
     /// Fins-related API endpoints (財務)
     #[command(name = "fins")]
     #[command(after_long_help = "\
@@ -464,6 +480,58 @@ pub enum DerivativesCommands {
 }
 
 #[derive(Subcommand)]
+pub enum EdinetCommands {
+    /// Fetch major shareholders from annual reports (大株主状況)
+    #[command(name = "major-shareholders")]
+    #[command(group = clap::ArgGroup::new("issuer").multiple(false))]
+    MajorShareholders {
+        /// EDINET code (e.g. E03814)
+        #[arg(long, group = "issuer")]
+        edinet_code: Option<String>,
+
+        /// Stock code
+        #[arg(long, group = "issuer")]
+        code: Option<String>,
+
+        /// Submission date (YYYY-MM-DD)
+        #[arg(long)]
+        date: Option<String>,
+    },
+    /// Fetch cross-shareholdings from annual reports (政策保有株式)
+    #[command(name = "cross-shareholdings")]
+    #[command(group = clap::ArgGroup::new("issuer").multiple(false))]
+    CrossShareholdings {
+        /// EDINET code (e.g. E02367)
+        #[arg(long, group = "issuer")]
+        edinet_code: Option<String>,
+
+        /// Stock code
+        #[arg(long, group = "issuer")]
+        code: Option<String>,
+
+        /// Submission date (YYYY-MM-DD)
+        #[arg(long)]
+        date: Option<String>,
+    },
+    /// Fetch large volume holding reports (大量保有報告書)
+    #[command(name = "large-volume-shareholders")]
+    #[command(group = clap::ArgGroup::new("issuer").multiple(false))]
+    LargeVolumeShareholders {
+        /// Issuer EDINET code (e.g. E03814)
+        #[arg(long, group = "issuer")]
+        edinet_code: Option<String>,
+
+        /// Issuer stock code
+        #[arg(long, group = "issuer")]
+        code: Option<String>,
+
+        /// Submission date (YYYY-MM-DD)
+        #[arg(long)]
+        date: Option<String>,
+    },
+}
+
+#[derive(Subcommand)]
 pub enum FinsCommands {
     /// Fetch financial statements (財務諸表)
     #[command(long_about = "Fetch financial statements (BS/PL/CF) (財務諸表)")]
@@ -507,6 +575,31 @@ Examples:
         /// End date (YYYY-MM-DD)
         #[arg(long)]
         to: Option<String>,
+    },
+    /// Fetch earnings announcement dates (決算発表予定日)
+    #[command(name = "earnings-date")]
+    #[command(long_about = "Fetch earnings announcement dates (決算発表予定日)")]
+    #[command(after_long_help = "\
+Note: code / date / scheduled_date のいずれか1つの指定が必須（2つ以上の同時指定は不可）。
+      予定日が未定の場合、SchDate は空文字で返る。
+
+Examples:
+  jquants fins earnings-date --code 86970                 # 銘柄の予定日公表履歴
+  jquants fins earnings-date --date 2026-06-03            # 指定日に公表・変更された全銘柄の予定日
+  jquants fins earnings-date --scheduled-date 2026-08-05  # 指定日を現在有効な予定日とする全銘柄")]
+    #[command(group = clap::ArgGroup::new("query").required(true).multiple(false))]
+    EarningsDate {
+        /// Stock code
+        #[arg(long, group = "query")]
+        code: Option<String>,
+
+        /// Publication date (YYYY-MM-DD)
+        #[arg(long, group = "query")]
+        date: Option<String>,
+
+        /// Scheduled announcement date (YYYY-MM-DD)
+        #[arg(long, group = "query")]
+        scheduled_date: Option<String>,
     },
     /// Fetch financial summary (財務情報サマリー)
     #[command(after_long_help = "\

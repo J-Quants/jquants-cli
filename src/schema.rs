@@ -1,6 +1,7 @@
 use crate::models::{
-    AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, FinsDetails,
-    FinsDividend, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
+    AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, EdinetCrossShareholdings,
+    EdinetLargeVolumeShareholders, EdinetMajorShareholders, FinsDetails, FinsDividend,
+    FinsEarningsDate, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
     TdBulk, TdFiles, TdList, TopixDailyBar,
 };
@@ -474,10 +475,20 @@ impl SchemaInfo for DailyBar {
                 field_type: "number?",
                 description: "後場調整後出来高",
             },
+            FieldSchema {
+                name: "MktCap",
+                field_type: "number?",
+                description: "時価総額（百万円）。指数用株式数が無い銘柄（ETF・ETN等）や取引が存在しない日は null",
+            },
+            FieldSchema {
+                name: "ExRT",
+                field_type: "string?",
+                description: "権利落種類（1: 株式分割 / 2: 株式併合 / 3: ライツイシュー。株式無償割当は 1 に含む）。該当する権利落ちが無い日は null",
+            },
         ]
     }
     fn field_count() -> usize {
-        42
+        44
     }
 }
 
@@ -1882,6 +1893,300 @@ impl SchemaInfo for FinsDividend {
     }
 }
 
+impl SchemaInfo for EdinetMajorShareholders {
+    fn endpoint_key() -> &'static str {
+        "edinet.major-shareholders"
+    }
+    fn endpoint_description() -> &'static str {
+        "大株主状況（有価証券報告書記載・EDINET由来）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "DocId",
+                field_type: "string",
+                description: "EDINET 書類管理番号（S + 7桁英数字）",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "提出会社の銘柄コード（5桁）",
+            },
+            FieldSchema {
+                name: "EdinetCode",
+                field_type: "string",
+                description: "提出会社の EDINET コード",
+            },
+            FieldSchema {
+                name: "FilerName",
+                field_type: "string",
+                description: "提出者名（会社名）",
+            },
+            FieldSchema {
+                name: "FilerNameEn",
+                field_type: "string",
+                description: "提出者名（英語）",
+            },
+            FieldSchema {
+                name: "DocTypeCode",
+                field_type: "string",
+                description: "書類種別コード（120 = 有価証券報告書）",
+            },
+            FieldSchema {
+                name: "SubDate",
+                field_type: "string",
+                description: "提出日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "SubTime",
+                field_type: "string",
+                description: "提出時刻 (HH:MM:SS)",
+            },
+            FieldSchema {
+                name: "PerSt",
+                field_type: "string",
+                description: "対象事業年度の開始日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "PerEn",
+                field_type: "string",
+                description: "対象事業年度の終了日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "Hldrs",
+                field_type: "array",
+                description: "大株主レコード配列（Rank/HldrName/HldrAddr/ShsHeld/ShsRatio。--output json で完全表示）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        11
+    }
+}
+
+impl SchemaInfo for EdinetCrossShareholdings {
+    fn endpoint_key() -> &'static str {
+        "edinet.cross-shareholdings"
+    }
+    fn endpoint_description() -> &'static str {
+        "政策保有株式（有価証券報告書「株式の保有状況」・EDINET由来）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "DocId",
+                field_type: "string",
+                description: "EDINET 書類管理番号（S + 7桁英数字）",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "提出会社の銘柄コード（5桁）",
+            },
+            FieldSchema {
+                name: "EdinetCode",
+                field_type: "string",
+                description: "提出会社の EDINET コード",
+            },
+            FieldSchema {
+                name: "FilerName",
+                field_type: "string",
+                description: "提出者名（会社名・和文）",
+            },
+            FieldSchema {
+                name: "FilerNameEn",
+                field_type: "string",
+                description: "提出者名（英文）",
+            },
+            FieldSchema {
+                name: "DocTypeCode",
+                field_type: "string",
+                description: "書類種別コード（120 = 有価証券報告書）",
+            },
+            FieldSchema {
+                name: "SubDate",
+                field_type: "string",
+                description: "提出日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "SubTime",
+                field_type: "string",
+                description: "提出時刻 (HH:MM:SS)",
+            },
+            FieldSchema {
+                name: "PerSt",
+                field_type: "string",
+                description: "対象事業年度の開始日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "PerEn",
+                field_type: "string",
+                description: "対象事業年度の終了日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "Report",
+                field_type: "object",
+                description: "提出会社自身の保有ブロック（上場/非上場別集計・Spec[]/Deem[] 銘柄明細。--output json で完全表示）",
+            },
+            FieldSchema {
+                name: "Largest",
+                field_type: "object",
+                description: "連結最大保有会社の保有ブロック（構造は Report と同じ）",
+            },
+            FieldSchema {
+                name: "SecondLargest",
+                field_type: "object",
+                description: "連結第二最大保有会社の保有ブロック（構造は Report と同じ）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        13
+    }
+}
+
+impl SchemaInfo for EdinetLargeVolumeShareholders {
+    fn endpoint_key() -> &'static str {
+        "edinet.large-volume-shareholders"
+    }
+    fn endpoint_description() -> &'static str {
+        "大量保有報告書・変更報告書（発行者・提出者情報・EDINET由来）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "DocId",
+                field_type: "string",
+                description: "EDINET 書類管理番号（S + 7桁英数字）",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "発行者（保有対象銘柄）の銘柄コード（5桁）",
+            },
+            FieldSchema {
+                name: "EdinetCode",
+                field_type: "string",
+                description: "発行者の EDINET コード",
+            },
+            FieldSchema {
+                name: "IsrName",
+                field_type: "string",
+                description: "発行者名",
+            },
+            FieldSchema {
+                name: "DocTypeCode",
+                field_type: "string",
+                description: "書類種別コード（350 = 大量保有報告書関連）",
+            },
+            FieldSchema {
+                name: "SubDate",
+                field_type: "string",
+                description: "提出日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "SubTime",
+                field_type: "string",
+                description: "提出時刻 (HH:MM:SS)",
+            },
+            FieldSchema {
+                name: "LargeHldgTypeCode",
+                field_type: "string",
+                description: "大量保有書類種別コード（1=大量保有報告書 / 2=変更報告書 / 3=変更報告書(短期大量譲渡) / 4=大量保有報告書(特例) / 5=変更報告書(特例) / 0=不明）",
+            },
+            FieldSchema {
+                name: "DocTitle",
+                field_type: "string",
+                description: "書類表題（e.g. 大量保有報告書）",
+            },
+            FieldSchema {
+                name: "ChgRsn",
+                field_type: "string",
+                description: "報告義務発生日における変更事由（変更報告書のみ）",
+            },
+            FieldSchema {
+                name: "TotalShsHeld",
+                field_type: "string",
+                description: "保有株券等の数の合計（株）",
+            },
+            FieldSchema {
+                name: "TotalShsRatio",
+                field_type: "string",
+                description: "株券等保有割合の合計。小数表現（0.1343 = 13.43%）",
+            },
+            FieldSchema {
+                name: "TotalShsRatioLast",
+                field_type: "string",
+                description: "直前の報告書に係る株券等保有割合の合計（変更報告書のみ）",
+            },
+            FieldSchema {
+                name: "TotalOutStks",
+                field_type: "string",
+                description: "発行済株式等総数（株）",
+            },
+            FieldSchema {
+                name: "Hldrs",
+                field_type: "array",
+                description: "提出者及び共同保有者のレコード配列（AcqDisp[]/BrwList[]/CredList[] を含む。--output json で完全表示）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        15
+    }
+}
+
+impl SchemaInfo for FinsEarningsDate {
+    fn endpoint_key() -> &'static str {
+        "fins.earnings-date"
+    }
+    fn endpoint_description() -> &'static str {
+        "決算発表予定日（予定日の変更・未定の履歴を公表日単位で提供）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "PubDate",
+                field_type: "string",
+                description: "公表日 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "SchDate",
+                field_type: "string",
+                description: "決算発表予定日 (YYYY-MM-DD)・未定の場合は空文字",
+            },
+            FieldSchema {
+                name: "FQName",
+                field_type: "string",
+                description: "決算区分 (1Q/2Q/3Q/FY)",
+            },
+            FieldSchema {
+                name: "FYE",
+                field_type: "string",
+                description: "決算期末 (MMDD)",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "銘柄コード（5桁）",
+            },
+            FieldSchema {
+                name: "CoName",
+                field_type: "string",
+                description: "会社名",
+            },
+            FieldSchema {
+                name: "CoNameEn",
+                field_type: "string",
+                description: "会社名（英語）",
+            },
+        ]
+    }
+    fn field_count() -> usize {
+        7
+    }
+}
+
 impl SchemaInfo for FinsSummary {
     fn endpoint_key() -> &'static str {
         "fins.summary"
@@ -2442,10 +2747,30 @@ impl SchemaInfo for FinsSummary {
                 field_type: "string",
                 description: "連結EPS通期予想（翌期）",
             },
+            FieldSchema {
+                name: "ShEq",
+                field_type: "string",
+                description: "自己資本",
+            },
+            FieldSchema {
+                name: "NCShEq",
+                field_type: "string",
+                description: "自己資本_非連結",
+            },
+            FieldSchema {
+                name: "ROE",
+                field_type: "string",
+                description: "自己資本利益率",
+            },
+            FieldSchema {
+                name: "NCROE",
+                field_type: "string",
+                description: "自己資本利益率_非連結",
+            },
         ]
     }
     fn field_count() -> usize {
-        107
+        111
     }
 }
 
@@ -2740,8 +3065,10 @@ register_endpoints! {
     Breakdown, MarginAlert, MarginInterest, Calendar, ShortRatio, ShortSaleReport;
     // deriv グループ
     Options225Bar, FuturesBar, OptionsBar;
+    // edinet グループ
+    EdinetMajorShareholders, EdinetCrossShareholdings, EdinetLargeVolumeShareholders;
     // fins グループ
-    FinsDetails, FinsDividend, FinsSummary;
+    FinsDetails, FinsDividend, FinsEarningsDate, FinsSummary;
     // idx グループ
     TopixDailyBar, IndexDailyBar;
     // bulk グループ
@@ -2758,7 +3085,7 @@ mod tests {
 
     #[test]
     fn test_all_endpoints_count() {
-        assert_eq!(all_endpoint_schemas().len(), 24);
+        assert_eq!(all_endpoint_schemas().len(), 28);
     }
 
     #[test]

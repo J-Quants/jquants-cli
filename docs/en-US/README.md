@@ -153,12 +153,23 @@ jquants --output json eq earnings-calendar
 | `mkt short-ratio` | Sector short-selling ratio | `--s33`, `--date`, `--from`, `--to` |
 | `mkt short-sale-report` | Short sale report | `--code`, `--disc-date`, `--disc-date-from`, `--disc-date-to`, `--calc-date` |
 
+#### edinet — EDINET Documents
+
+| Subcommand | Description | Key Options |
+|---|---|---|
+| `edinet major-shareholders` | Major shareholders (annual securities reports) | `--edinet-code`, `--code`, `--date` |
+| `edinet cross-shareholdings` | Cross-shareholdings (annual securities reports) | `--edinet-code`, `--code`, `--date` |
+| `edinet large-volume-shareholders` | Large volume holding reports | `--edinet-code`, `--code`, `--date` |
+
+> Standard plan or higher is required. `--edinet-code` and `--code` cannot be specified together; if all options are omitted, documents submitted on the day of the API call are returned. Nested fields (`Hldrs`, `Report`, etc.) are summarized as item counts in table mode — use `--output json` for the full data.
+
 #### fins — Financials
 
 | Subcommand | Description | Key Options |
 |---|---|---|
 | `fins details` | Financial statements (BS/PL/CF) | `--code`, `--date` |
 | `fins dividend` | Dividend data | `--code`, `--date`, `--from`, `--to` |
+| `fins earnings-date` | Earnings announcement dates | `--code`, `--date`, `--scheduled-date` (exactly one required) |
 | `fins summary` | Financial summary | `--code`, `--date` |
 
 > In table mode, the `fins details` FS column shows only the item count. Use `--output json` to retrieve the full financial statement data.

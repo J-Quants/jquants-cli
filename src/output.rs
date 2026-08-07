@@ -1,8 +1,9 @@
 use crate::cli::OutputFormat;
 use crate::error::AppError;
 use crate::models::{
-    AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, FinsDetails,
-    FinsDividend, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
+    AmBar, Breakdown, BulkListItem, Calendar, DailyBar, EarningsCalendar, EdinetCrossShareholdings,
+    EdinetLargeVolumeShareholders, EdinetMajorShareholders, FinsDetails, FinsDividend,
+    FinsEarningsDate, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
     TdBulk, TdFiles, TdList, TopixDailyBar,
 };
@@ -260,6 +261,25 @@ impl TableDisplay for FinsSummary {
     }
 }
 
+impl TableDisplay for FinsEarningsDate {
+    fn table_headers() -> Vec<&'static str> {
+        vec![
+            "PubDate", "SchDate", "FQName", "FYE", "Code", "CoName", "CoNameEn",
+        ]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.pub_date.clone(),
+            self.sch_date.clone(),
+            self.fq_name.clone(),
+            self.fye.clone(),
+            self.code.clone(),
+            self.co_name.clone(),
+            self.co_name_en.clone(),
+        ]
+    }
+}
+
 impl TableDisplay for TopixDailyBar {
     fn table_headers() -> Vec<&'static str> {
         vec!["Date", "Open", "High", "Low", "Close"]
@@ -424,6 +444,74 @@ impl TableDisplay for FinsDetails {
     }
 }
 
+impl TableDisplay for EdinetMajorShareholders {
+    fn table_headers() -> Vec<&'static str> {
+        vec!["DocId", "Code", "FilerName", "SubDate", "PerEn", "Hldrs"]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.doc_id.clone(),
+            self.code.clone(),
+            self.filer_name.clone(),
+            self.sub_date.clone(),
+            self.per_en.clone(),
+            nested_value_summary(&self.hldrs),
+        ]
+    }
+}
+
+impl TableDisplay for EdinetCrossShareholdings {
+    fn table_headers() -> Vec<&'static str> {
+        vec![
+            "DocId",
+            "Code",
+            "FilerName",
+            "SubDate",
+            "PerEn",
+            "Report",
+            "Largest",
+            "SecondLargest",
+        ]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.doc_id.clone(),
+            self.code.clone(),
+            self.filer_name.clone(),
+            self.sub_date.clone(),
+            self.per_en.clone(),
+            nested_value_summary(&self.report),
+            nested_value_summary(&self.largest),
+            nested_value_summary(&self.second_largest),
+        ]
+    }
+}
+
+impl TableDisplay for EdinetLargeVolumeShareholders {
+    fn table_headers() -> Vec<&'static str> {
+        vec![
+            "DocId",
+            "Code",
+            "IsrName",
+            "SubDate",
+            "DocTitle",
+            "TotalShsRatio",
+            "Hldrs",
+        ]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.doc_id.clone(),
+            self.code.clone(),
+            self.isr_name.clone(),
+            self.sub_date.clone(),
+            self.doc_title.clone(),
+            self.total_shs_ratio.to_string(),
+            nested_value_summary(&self.hldrs),
+        ]
+    }
+}
+
 impl TableDisplay for TdBulk {
     fn table_headers() -> Vec<&'static str> {
         vec!["LastUpdated", "URL"]
@@ -557,6 +645,16 @@ fn fins_fs_keys_summary(fs: &serde_json::Value) -> String {
     match fs {
         serde_json::Value::Object(map) => format!("{} items", map.len()),
         _ => "-".to_string(),
+    }
+}
+
+/// ネスト値（配列/オブジェクト）をテーブル表示用に件数へ略記する
+fn nested_value_summary(v: &serde_json::Value) -> String {
+    match v {
+        serde_json::Value::Array(items) => format!("{} items", items.len()),
+        serde_json::Value::Object(map) => format!("{} keys", map.len()),
+        serde_json::Value::Null => "-".to_string(),
+        other => other.to_string(),
     }
 }
 
@@ -899,6 +997,213 @@ pub fn output_fins_details(
                 item.doc_type.as_str(),
                 fs_str.as_str(),
             ])?;
+        }
+        wtr.flush()?;
+        saved_notice(save);
+        Ok(())
+    } else {
+        output(results, format, save, fields)
+    }
+}
+
+/// EDINET 大株主状況の出力。CSV ではネストの Hldrs を JSON 文字列として 1 セルに収める
+pub fn output_edinet_major_shareholders(
+    results: &[EdinetMajorShareholders],
+    format: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+) -> Result<(), AppError> {
+    if let Some(ref field_list) = fields {
+        return output_filtered(results, field_list, format, save);
+    }
+    if let OutputFormat::Csv = format {
+        let mut wtr = csv::Writer::from_writer(make_writer(save)?);
+        wtr.write_record([
+            "DocId",
+            "Code",
+            "EdinetCode",
+            "FilerName",
+            "FilerNameEn",
+            "DocTypeCode",
+            "SubDate",
+            "SubTime",
+            "PerSt",
+            "PerEn",
+            "Hldrs",
+        ])?;
+        for item in results {
+            let row = vec![
+                item.doc_id.clone(),
+                item.code.clone(),
+                item.edinet_code.clone(),
+                item.filer_name.clone(),
+                item.filer_name_en.clone(),
+                item.doc_type_code.clone(),
+                item.sub_date.clone(),
+                item.sub_time.clone(),
+                item.per_st.clone(),
+                item.per_en.clone(),
+                serde_json::to_string(&item.hldrs)?,
+            ];
+            wtr.write_record(&row)?;
+        }
+        wtr.flush()?;
+        saved_notice(save);
+        Ok(())
+    } else {
+        output(results, format, save, fields)
+    }
+}
+
+/// EDINET 政策保有株式の出力。CSV では Report/Largest/SecondLargest を JSON 文字列として 1 セルに収める
+pub fn output_edinet_cross_shareholdings(
+    results: &[EdinetCrossShareholdings],
+    format: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+) -> Result<(), AppError> {
+    if let Some(ref field_list) = fields {
+        return output_filtered(results, field_list, format, save);
+    }
+    if let OutputFormat::Csv = format {
+        let mut wtr = csv::Writer::from_writer(make_writer(save)?);
+        wtr.write_record([
+            "DocId",
+            "Code",
+            "EdinetCode",
+            "FilerName",
+            "FilerNameEn",
+            "DocTypeCode",
+            "SubDate",
+            "SubTime",
+            "PerSt",
+            "PerEn",
+            "Report",
+            "Largest",
+            "SecondLargest",
+        ])?;
+        for item in results {
+            let row = vec![
+                item.doc_id.clone(),
+                item.code.clone(),
+                item.edinet_code.clone(),
+                item.filer_name.clone(),
+                item.filer_name_en.clone(),
+                item.doc_type_code.clone(),
+                item.sub_date.clone(),
+                item.sub_time.clone(),
+                item.per_st.clone(),
+                item.per_en.clone(),
+                serde_json::to_string(&item.report)?,
+                serde_json::to_string(&item.largest)?,
+                serde_json::to_string(&item.second_largest)?,
+            ];
+            wtr.write_record(&row)?;
+        }
+        wtr.flush()?;
+        saved_notice(save);
+        Ok(())
+    } else {
+        output(results, format, save, fields)
+    }
+}
+
+/// EDINET 大量保有報告書の出力。CSV ではネストの Hldrs を JSON 文字列として 1 セルに収める
+pub fn output_edinet_large_volume_shareholders(
+    results: &[EdinetLargeVolumeShareholders],
+    format: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+) -> Result<(), AppError> {
+    if let Some(ref field_list) = fields {
+        return output_filtered(results, field_list, format, save);
+    }
+    if let OutputFormat::Csv = format {
+        let mut wtr = csv::Writer::from_writer(make_writer(save)?);
+        wtr.write_record([
+            "DocId",
+            "Code",
+            "EdinetCode",
+            "IsrName",
+            "DocTypeCode",
+            "SubDate",
+            "SubTime",
+            "LargeHldgTypeCode",
+            "DocTitle",
+            "ChgRsn",
+            "TotalShsHeld",
+            "TotalShsRatio",
+            "TotalShsRatioLast",
+            "TotalOutStks",
+            "Hldrs",
+        ])?;
+        for item in results {
+            let row = vec![
+                item.doc_id.clone(),
+                item.code.clone(),
+                item.edinet_code.clone(),
+                item.isr_name.clone(),
+                item.doc_type_code.clone(),
+                item.sub_date.clone(),
+                item.sub_time.clone(),
+                item.large_hldg_type_code.clone(),
+                item.doc_title.clone(),
+                item.chg_rsn.to_string(),
+                item.total_shs_held.to_string(),
+                item.total_shs_ratio.to_string(),
+                item.total_shs_ratio_last.to_string(),
+                item.total_out_stks.to_string(),
+                serde_json::to_string(&item.hldrs)?,
+            ];
+            wtr.write_record(&row)?;
+        }
+        wtr.flush()?;
+        saved_notice(save);
+        Ok(())
+    } else {
+        output(results, format, save, fields)
+    }
+}
+
+/// TDnet 適時開示一覧の出力。CSV では配列の DiscItems/Docs を JSON 文字列として 1 セルに収める
+/// （汎用 output() の csv::serialize はネスト配列を扱えずエラーになるため）
+pub fn output_td_list(
+    results: &[TdList],
+    format: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+) -> Result<(), AppError> {
+    if let Some(ref field_list) = fields {
+        return output_filtered(results, field_list, format, save);
+    }
+    if let OutputFormat::Csv = format {
+        let mut wtr = csv::Writer::from_writer(make_writer(save)?);
+        wtr.write_record([
+            "DiscNo",
+            "Code",
+            "Name",
+            "DiscDate",
+            "DiscTime",
+            "Title",
+            "DiscStatus",
+            "RevNo",
+            "DiscItems",
+            "Docs",
+        ])?;
+        for item in results {
+            let row = vec![
+                item.disc_no.clone(),
+                item.code.clone(),
+                item.name.clone(),
+                item.disc_date.clone(),
+                item.disc_time.clone(),
+                item.title.clone(),
+                item.disc_status.clone().unwrap_or_default(),
+                item.rev_no.clone(),
+                serde_json::to_string(&item.disc_items)?,
+                serde_json::to_string(&item.docs)?,
+            ];
+            wtr.write_record(&row)?;
         }
         wtr.flush()?;
         saved_notice(save);

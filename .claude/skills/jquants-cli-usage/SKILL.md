@@ -7,7 +7,8 @@ description: >
   プランごとの API 利用可否・取得可能データ期間（Free/Light/Standard/Premium）の確認にも対応。
   トリガー: jquants, J-Quants, 株価, 株価データ, 銘柄, 四本値, 分足,
   OHLCV, JPX, 東証, TOPIX, 日経225, 先物, オプション, デリバティブ,
-  空売り, 信用取引, 配当, 財務諸表, 決算, PER, PBR, ROE,
+  空売り, 信用取引, 配当, 財務諸表, 決算, 決算発表予定日, PER, PBR, ROE,
+  EDINET, 大株主, 政策保有株式, 大量保有報告書, 有価証券報告書,
   指数, バルクダウンロード, 日本株, Japanese stock,
   stock price, market data, financial statements,
   プラン, サブスクリプション, subscription, plan, Free, Light, Standard, Premium,
@@ -22,7 +23,7 @@ description: >
 
 jquants コマンドを構築するときは、以下の順序で判断する:
 
-1. **データ種別を決める** — 株式(eq)・市場(mkt)・デリバティブ(deriv)・財務(fins)・指数(idx)
+1. **データ種別を決める** — 株式(eq)・市場(mkt)・デリバティブ(deriv)・EDINET書類(edinet)・財務(fins)・指数(idx)
 2. **プラン制限を確認する** — ユーザーのプランで利用可能か確認する（下記「Subscription Plans & API Availability」参照）。プランが不明な場合は、コマンドを提示しつつ必要プランを明記する
 3. **フィールド名を確認する** — `-f` で絞り込む前に `jquants schema <endpoint>` で正確な名前を調べる（推測しない）
 4. **個別API vs バルクを選ぶ** — 「全銘柄」「1ヶ月以上」「大量」のいずれかに該当 → バルク（references/commands-bulk.md 参照）。個別APIを大量に繰り返すとレートリミットに抵触するため（下記 Rate Limits 参照）。**Free プランは CSV/バルク不可**（`mkt calendar` を除く）
@@ -139,11 +140,19 @@ jquants --output json schema    # JSON 形式で出力
 | オプション四本値 | `jquants deriv options` | 日次 27:00頃 |
 | 日経225オプション | `jquants deriv options-225` | 日次 27:00頃 |
 
+### EDINET書類由来データ（edinet）※ Standard プラン以上
+| やりたいこと | コマンド | 更新時刻 |
+|---|---|---|
+| 大株主状況（有報） | `jquants edinet major-shareholders` | 随時（平日 8:00〜17:59） |
+| 政策保有株式（有報） | `jquants edinet cross-shareholdings` | 随時（平日 8:00〜17:59） |
+| 大量保有報告書 | `jquants edinet large-volume-shareholders` | 随時（平日 8:00〜17:59） |
+
 ### 財務データ（fins）
 | やりたいこと | コマンド | 更新時刻 |
 |---|---|---|
 | 財務諸表 | `jquants fins details` | 日次 18:00頃(速報) / 24:30頃(確報) |
 | 配当金情報 | `jquants fins dividend` | 日次 12〜19時頃 |
+| 決算発表予定日 | `jquants fins earnings-date` | 日次 10:05頃 |
 | 財務情報サマリー | `jquants fins summary` | 日次 18:00頃(速報) / 24:30頃(確報) |
 
 ### 指数データ（idx）
@@ -170,7 +179,8 @@ jquants --output json schema    # JSON 形式で出力
 | eq | references/commands-eq.md | 銘柄コード・日付・期間フィルタ、`eq trades` の特殊動作 |
 | mkt | references/commands-mkt.md | `--s33`, `--disc-date`/`--calc-date` 等の特殊フラグ |
 | deriv | references/commands-deriv.md | `--category`, `--contract-flag` の使い方 |
-| fins | references/commands-fins.md | `fins details` の FS フィールド（JSON出力必須） |
+| edinet | references/commands-edinet.md | ネスト項目の扱い・edinet_code/code の排他・3コマンドの個別仕様 |
+| fins | references/commands-fins.md | `fins details` の FS フィールド（JSON出力必須）、`fins earnings-date` の排他クエリ |
 | idx | references/commands-idx.md | 指数コード指定・TOPIX |
 | bulk | references/commands-bulk.md | バルクDLの判断基準・ワークフロー・エンドポイント一覧 |
 | td | references/commands-td.md | `--cursor` によるリアルタイムポーリング・`--download` の使い方・ファイル名規則 |
@@ -298,9 +308,9 @@ J-Quants API はプランごとに1分あたりのリクエスト上限が設定
 
 | 最低必要プラン | CLI コマンド |
 |---|---|
-| **Free** | `eq master`, `eq daily`, `eq earnings-calendar`, `fins summary`, `mkt calendar` |
+| **Free** | `eq master`, `eq daily`, `eq earnings-calendar`, `fins summary`, `fins earnings-date`, `mkt calendar` |
 | **Light** | `eq investor-types`, `idx daily-topix` |
-| **Standard** | `mkt margin-interest`, `mkt short-ratio`, `mkt short-sale-report`, `mkt margin-alert`, `idx daily`, `deriv options-225` |
+| **Standard** | `mkt margin-interest`, `mkt short-ratio`, `mkt short-sale-report`, `mkt margin-alert`, `idx daily`, `deriv options-225`, `edinet major-shareholders`, `edinet cross-shareholdings`, `edinet large-volume-shareholders` |
 | **Premium** | `eq am`, `fins details`, `fins dividend`, `mkt breakdown`, `deriv futures`, `deriv options` |
 | **Add-on** | `eq minute`, `eq trades`（分足・ティック専用アドオン契約が必要） |
 | **Add-on** | `td list`, `td files`, `td bulk`（TDnet/適時開示情報アドオン契約が必要） |
@@ -319,11 +329,13 @@ J-Quants API のデータは市場イベント後に順次更新される。**�
 
 | 更新時刻目安 | 反映されるデータ |
 |---|---|
+| 〜10:05 | 決算発表予定日（`fins earnings-date`）が当日公表分に更新 |
 | 〜12:00 | 前場四本値（`eq am`）が当日分に更新 |
 | 〜16:30 | 株価四本値・分足・ティック・指数・空売り比率・信用残（日次）が当日分に更新 |
 | 〜17:30 | 銘柄マスタ・空売り残高報告が更新 |
 | 〜18:00 | 売買内訳・投資部門別（週次）・財務情報（速報）が更新 |
-| 〜19:00 | 決算発表予定日が更新（不定期・JPX連動） |
+| 〜19:00 | 決算発表予定日（3・9月期のみ、`eq earnings-calendar`）が更新（不定期・JPX連動） |
+| 随時 | EDINET書類由来データ（`edinet` 系）が開示発生次第反映（平日 8:00〜17:59） |
 | 〜24:30 | 財務情報（確報）・財務諸表（確報）が更新 |
 | 〜27:00 | デリバティブ（先物・オプション）が当日分に更新（27:00 = 翌日3:00 AM） |
 

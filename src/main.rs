@@ -2,15 +2,17 @@ use clap::{CommandFactory, Parser};
 use include_dir::{include_dir, Dir};
 use jquants_cli::auth::{login, logout};
 use jquants_cli::cli::{
-    BulkCommands, Cli, Commands, DerivativesCommands, EquitiesCommands, FinsCommands,
-    IndicesCommands, MarketsCommands, OutputFormat, SkillsCommands, TdCommands,
+    BulkCommands, Cli, Commands, DerivativesCommands, EdinetCommands, EquitiesCommands,
+    FinsCommands, IndicesCommands, MarketsCommands, OutputFormat, SkillsCommands, TdCommands,
 };
 use jquants_cli::client::JQuantsClient;
 use jquants_cli::config::Config;
 use jquants_cli::download::{download_bulk_file, download_td_files, handle_bulk_download};
 use jquants_cli::error;
 use jquants_cli::output::{
-    output, output_fins_details, output_margin_alert, output_td_files, FieldSelection,
+    output, output_edinet_cross_shareholdings, output_edinet_large_volume_shareholders,
+    output_edinet_major_shareholders, output_fins_details, output_margin_alert, output_td_files,
+    output_td_list, FieldSelection,
 };
 use jquants_cli::schema::{all_endpoint_keys, all_endpoint_schemas, lookup_endpoint};
 
@@ -353,6 +355,16 @@ async fn run_fins(
                 .await?;
             output(&results, out_fmt, save, fields)?;
         }
+        FinsCommands::EarningsDate {
+            code,
+            date,
+            scheduled_date,
+        } => {
+            let results = client
+                .get_fins_earnings_date(code.as_deref(), date.as_deref(), scheduled_date.as_deref())
+                .await?;
+            output(&results, out_fmt, save, fields)?;
+        }
         FinsCommands::Summary { code, date, cursor } => {
             let (results, response_cursor) = client
                 .get_fins_summary(code.as_deref(), date.as_deref(), cursor.as_deref())
@@ -361,6 +373,60 @@ async fn run_fins(
             if let Some(c) = response_cursor {
                 eprintln!("cursor: {c}");
             }
+        }
+    }
+    Ok(())
+}
+
+async fn run_edinet(
+    client: &JQuantsClient,
+    out_fmt: &OutputFormat,
+    save: &Option<String>,
+    fields: &FieldSelection,
+    command: EdinetCommands,
+) -> Result<(), error::AppError> {
+    match command {
+        EdinetCommands::MajorShareholders {
+            edinet_code,
+            code,
+            date,
+        } => {
+            let results = client
+                .get_edinet_major_shareholders(
+                    edinet_code.as_deref(),
+                    code.as_deref(),
+                    date.as_deref(),
+                )
+                .await?;
+            output_edinet_major_shareholders(&results, out_fmt, save, fields)?;
+        }
+        EdinetCommands::CrossShareholdings {
+            edinet_code,
+            code,
+            date,
+        } => {
+            let results = client
+                .get_edinet_cross_shareholdings(
+                    edinet_code.as_deref(),
+                    code.as_deref(),
+                    date.as_deref(),
+                )
+                .await?;
+            output_edinet_cross_shareholdings(&results, out_fmt, save, fields)?;
+        }
+        EdinetCommands::LargeVolumeShareholders {
+            edinet_code,
+            code,
+            date,
+        } => {
+            let results = client
+                .get_edinet_large_volume_shareholders(
+                    edinet_code.as_deref(),
+                    code.as_deref(),
+                    date.as_deref(),
+                )
+                .await?;
+            output_edinet_large_volume_shareholders(&results, out_fmt, save, fields)?;
         }
     }
     Ok(())
@@ -426,7 +492,7 @@ async fn run_td(
                     cursor.as_deref(),
                 )
                 .await?;
-            output(&results, out_fmt, save, fields)?;
+            output_td_list(&results, out_fmt, save, fields)?;
             if let Some(c) = response_cursor {
                 eprintln!("cursor: {c}");
             }
@@ -590,9 +656,7 @@ async fn run() -> Result<(), error::AppError> {
     }
 
     // --fields の空ベクタは未指定扱い（-f "" や -f "," のケース）
-    let fields: FieldSelection = cli
-        .fields
-        .and_then(|v| if v.is_empty() { None } else { Some(v) });
+    let fields: FieldSelection = cli.fields.filter(|v| !v.is_empty());
 
     if let Commands::Schema { ref endpoint } = cli.command {
         return run_schema(&cli.output, &cli.save, &fields, endpoint.as_deref());
@@ -610,6 +674,9 @@ async fn run() -> Result<(), error::AppError> {
         }
         Commands::Derivatives { command } => {
             run_derivatives(&client, &cli.output, &cli.save, &fields, command).await?;
+        }
+        Commands::Edinet { command } => {
+            run_edinet(&client, &cli.output, &cli.save, &fields, command).await?;
         }
         Commands::Fins { command } => {
             run_fins(&client, &cli.output, &cli.save, &fields, command).await?;
