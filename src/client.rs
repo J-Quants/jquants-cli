@@ -2,9 +2,10 @@ use crate::config::Config;
 use crate::error::AppError;
 use crate::models::{
     AmBar, ApiErrorResponse, ApiResponse, Breakdown, BulkGetResponse, BulkListItem, Calendar,
-    DailyBar, EarningsCalendar, FinsDetails, FinsDividend, FinsSummary, FuturesBar, IndexDailyBar,
-    InvestorType, MarginAlert, MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio,
-    ShortSaleReport, StockMaster, TdBulk, TdFiles, TdList, TopixDailyBar,
+    DailyBar, EarningsCalendar, EdinetCrossShareholdings, EdinetLargeVolumeShareholders,
+    EdinetMajorShareholders, FinsDetails, FinsDividend, FinsEarningsDate, FinsSummary, FuturesBar,
+    IndexDailyBar, InvestorType, MarginAlert, MarginInterest, MinuteBar, Options225Bar, OptionsBar,
+    ShortRatio, ShortSaleReport, StockMaster, TdBulk, TdFiles, TdList, TopixDailyBar,
 };
 use reqwest::Client;
 
@@ -281,6 +282,20 @@ impl JQuantsClient {
         self.fetch_paginated("/fins/dividend", params).await
     }
 
+    pub async fn get_fins_earnings_date(
+        &self,
+        code: Option<&str>,
+        date: Option<&str>,
+        scheduled_date: Option<&str>,
+    ) -> Result<Vec<FinsEarningsDate>, AppError> {
+        let params = build_params(&[
+            ("code", code),
+            ("date", date),
+            ("scheduled_date", scheduled_date),
+        ]);
+        self.fetch_paginated("/fins/earnings-date", params).await
+    }
+
     pub async fn get_fins_summary(
         &self,
         code: Option<&str>,
@@ -325,6 +340,39 @@ impl JQuantsClient {
         }
 
         Ok((all_results, response_cursor))
+    }
+
+    pub async fn get_edinet_major_shareholders(
+        &self,
+        edinet_code: Option<&str>,
+        code: Option<&str>,
+        date: Option<&str>,
+    ) -> Result<Vec<EdinetMajorShareholders>, AppError> {
+        let params = build_params(&[("edinet_code", edinet_code), ("code", code), ("date", date)]);
+        self.fetch_paginated("/edinet/major-shareholders", params)
+            .await
+    }
+
+    pub async fn get_edinet_cross_shareholdings(
+        &self,
+        edinet_code: Option<&str>,
+        code: Option<&str>,
+        date: Option<&str>,
+    ) -> Result<Vec<EdinetCrossShareholdings>, AppError> {
+        let params = build_params(&[("edinet_code", edinet_code), ("code", code), ("date", date)]);
+        self.fetch_paginated("/edinet/cross-shareholdings", params)
+            .await
+    }
+
+    pub async fn get_edinet_large_volume_shareholders(
+        &self,
+        edinet_code: Option<&str>,
+        code: Option<&str>,
+        date: Option<&str>,
+    ) -> Result<Vec<EdinetLargeVolumeShareholders>, AppError> {
+        let params = build_params(&[("edinet_code", edinet_code), ("code", code), ("date", date)]);
+        self.fetch_paginated("/edinet/large-volume-shareholders", params)
+            .await
     }
 
     pub async fn get_topix_daily_bars(

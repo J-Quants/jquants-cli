@@ -247,6 +247,10 @@ pub struct DailyBar {
     pub afternoon_adj_close: Option<f64>,
     #[serde(rename = "AAdjVo")]
     pub afternoon_adj_volume: Option<f64>,
+    #[serde(rename = "MktCap")]
+    pub mkt_cap: Option<f64>,
+    #[serde(rename = "ExRT")]
+    pub ex_rt: Option<String>,
 }
 
 #[derive(Debug, Deserialize)]
@@ -782,6 +786,129 @@ pub struct FinsSummary {
     pub nx_f_nc_np: FlexString,
     #[serde(rename = "NxFNCEPS")]
     pub nx_f_nc_eps: FlexString,
+    #[serde(rename = "ShEq")]
+    pub sh_eq: FlexString,
+    #[serde(rename = "NCShEq")]
+    pub nc_sh_eq: FlexString,
+    #[serde(rename = "ROE")]
+    pub roe: FlexString,
+    #[serde(rename = "NCROE")]
+    pub nc_roe: FlexString,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct FinsEarningsDate {
+    #[serde(rename = "PubDate")]
+    pub pub_date: String,
+    #[serde(rename = "SchDate")]
+    pub sch_date: String,
+    #[serde(rename = "FQName")]
+    pub fq_name: String,
+    #[serde(rename = "FYE")]
+    pub fye: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "CoName")]
+    pub co_name: String,
+    #[serde(rename = "CoNameEn")]
+    pub co_name_en: String,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct EdinetMajorShareholders {
+    #[serde(rename = "DocId")]
+    pub doc_id: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "EdinetCode")]
+    pub edinet_code: String,
+    #[serde(rename = "FilerName")]
+    pub filer_name: String,
+    #[serde(rename = "FilerNameEn")]
+    pub filer_name_en: String,
+    #[serde(rename = "DocTypeCode")]
+    pub doc_type_code: String,
+    #[serde(rename = "SubDate")]
+    pub sub_date: String,
+    #[serde(rename = "SubTime")]
+    pub sub_time: String,
+    #[serde(rename = "PerSt")]
+    pub per_st: String,
+    #[serde(rename = "PerEn")]
+    pub per_en: String,
+    /// 大株主レコード配列（Rank/HldrName/HldrAddr/ShsHeld/ShsRatio）
+    #[serde(rename = "Hldrs")]
+    pub hldrs: Value,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct EdinetCrossShareholdings {
+    #[serde(rename = "DocId")]
+    pub doc_id: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "EdinetCode")]
+    pub edinet_code: String,
+    #[serde(rename = "FilerName")]
+    pub filer_name: String,
+    #[serde(rename = "FilerNameEn")]
+    pub filer_name_en: String,
+    #[serde(rename = "DocTypeCode")]
+    pub doc_type_code: String,
+    #[serde(rename = "SubDate")]
+    pub sub_date: String,
+    #[serde(rename = "SubTime")]
+    pub sub_time: String,
+    #[serde(rename = "PerSt")]
+    pub per_st: String,
+    #[serde(rename = "PerEn")]
+    pub per_en: String,
+    /// 提出会社自身の保有ブロック（上場/非上場別集計・Spec[]/Deem[] 銘柄明細）
+    #[serde(rename = "Report")]
+    pub report: Value,
+    /// 連結最大保有会社の保有ブロック
+    #[serde(rename = "Largest")]
+    pub largest: Value,
+    /// 連結第二最大保有会社の保有ブロック
+    #[serde(rename = "SecondLargest")]
+    pub second_largest: Value,
+}
+
+#[derive(Debug, Deserialize, Serialize, Clone)]
+pub struct EdinetLargeVolumeShareholders {
+    #[serde(rename = "DocId")]
+    pub doc_id: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "EdinetCode")]
+    pub edinet_code: String,
+    #[serde(rename = "IsrName")]
+    pub isr_name: String,
+    #[serde(rename = "DocTypeCode")]
+    pub doc_type_code: String,
+    #[serde(rename = "SubDate")]
+    pub sub_date: String,
+    #[serde(rename = "SubTime")]
+    pub sub_time: String,
+    #[serde(rename = "LargeHldgTypeCode")]
+    pub large_hldg_type_code: String,
+    #[serde(rename = "DocTitle")]
+    pub doc_title: String,
+    /// 変更事由（変更報告書のみ記載）
+    #[serde(rename = "ChgRsn")]
+    pub chg_rsn: FlexString,
+    #[serde(rename = "TotalShsHeld")]
+    pub total_shs_held: FlexString,
+    #[serde(rename = "TotalShsRatio")]
+    pub total_shs_ratio: FlexString,
+    /// 直前報告書の保有割合合計（変更報告書のみ記載）
+    #[serde(rename = "TotalShsRatioLast")]
+    pub total_shs_ratio_last: FlexString,
+    #[serde(rename = "TotalOutStks")]
+    pub total_out_stks: FlexString,
+    /// 提出者及び共同保有者のレコード配列（AcqDisp[]/BrwList[]/CredList[] を含む）
+    #[serde(rename = "Hldrs")]
+    pub hldrs: Value,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -1139,6 +1266,200 @@ mod tests {
         assert_eq!(response.data[0].code, "86970");
         assert_eq!(response.data[0].co_name, "日本取引所グループ");
         assert!(response.pagination_key.is_none());
+    }
+
+    #[test]
+    fn test_deserialize_fins_earnings_date_response() {
+        let json = r#"{
+            "data": [
+                {
+                    "PubDate": "2025-06-03",
+                    "SchDate": "2025-07-30",
+                    "FQName": "1Q",
+                    "FYE": "0331",
+                    "Code": "86970",
+                    "CoName": "日本取引所グループ",
+                    "CoNameEn": "Japan Exchange Group,Inc."
+                },
+                {
+                    "PubDate": "2025-08-01",
+                    "SchDate": "",
+                    "FQName": "2Q",
+                    "FYE": "0331",
+                    "Code": "86970",
+                    "CoName": "日本取引所グループ",
+                    "CoNameEn": "Japan Exchange Group,Inc."
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<FinsEarningsDate> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.data[0].sch_date, "2025-07-30");
+        assert_eq!(response.data[1].sch_date, "", "未定は空文字で返る");
+        assert_eq!(response.data[0].fye, "0331");
+    }
+
+    #[test]
+    fn test_deserialize_daily_bar_with_mktcap_and_exrt() {
+        let json = r#"{
+            "data": [
+                {
+                    "Date": "2026-08-07",
+                    "Code": "86970",
+                    "O": 2047.0,
+                    "H": 2069.0,
+                    "L": 2035.0,
+                    "C": 2045.0,
+                    "MktCap": 1083850.0,
+                    "ExRT": "1"
+                },
+                {
+                    "Date": "2026-08-07",
+                    "Code": "13260",
+                    "MktCap": null,
+                    "ExRT": null
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<DailyBar> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 2);
+        assert_eq!(response.data[0].mkt_cap, Some(1083850.0));
+        assert_eq!(response.data[0].ex_rt.as_deref(), Some("1"));
+        assert!(
+            response.data[1].mkt_cap.is_none(),
+            "ETF等・取引なし日は null → None"
+        );
+        assert!(
+            response.data[1].ex_rt.is_none(),
+            "権利落ちが無い日は null → None"
+        );
+    }
+
+    #[test]
+    fn test_deserialize_edinet_major_shareholders_response() {
+        let json = r#"{
+            "data": [
+                {
+                    "DocId": "S100YA84",
+                    "Code": "86970",
+                    "EdinetCode": "E03814",
+                    "FilerName": "株式会社日本取引所グループ",
+                    "FilerNameEn": "Japan Exchange Group, Inc.",
+                    "DocTypeCode": "120",
+                    "SubDate": "2026-06-11",
+                    "SubTime": "10:43:00",
+                    "PerSt": "2025-04-01",
+                    "PerEn": "2026-03-31",
+                    "Hldrs": [
+                        {
+                            "Rank": 1,
+                            "HldrName": "日本マスタートラスト信託銀行株式会社（信託口）",
+                            "HldrAddr": "東京都港区",
+                            "ShsHeld": 175830000,
+                            "ShsRatio": 0.1704
+                        }
+                    ]
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<EdinetMajorShareholders> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        let doc = &response.data[0];
+        assert_eq!(doc.code, "86970");
+        assert!(doc.hldrs.is_array(), "Hldrs は配列のまま保持される");
+        assert_eq!(doc.hldrs.as_array().unwrap().len(), 1);
+        assert_eq!(doc.hldrs[0]["Rank"], 1);
+    }
+
+    #[test]
+    fn test_deserialize_edinet_cross_shareholdings_with_null_block() {
+        // 提出会社自身が最大保有会社の場合、Largest は null で返る（実データで確認済みのパターン）
+        let json = r#"{
+            "data": [
+                {
+                    "DocId": "S100YA84",
+                    "Code": "86970",
+                    "EdinetCode": "E03814",
+                    "FilerName": "株式会社日本取引所グループ",
+                    "FilerNameEn": "Japan Exchange Group, Inc.",
+                    "DocTypeCode": "120",
+                    "SubDate": "2026-06-11",
+                    "SubTime": "10:43:00",
+                    "PerSt": "2025-04-01",
+                    "PerEn": "2026-03-31",
+                    "Report": {
+                        "HldrName": "株式会社日本取引所グループ",
+                        "NonListedIss": 6,
+                        "Spec": [],
+                        "Deem": []
+                    },
+                    "Largest": null,
+                    "SecondLargest": {
+                        "HldrName": "株式会社東京証券取引所",
+                        "NonListedIss": 2,
+                        "Spec": [],
+                        "Deem": []
+                    }
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<EdinetCrossShareholdings> = serde_json::from_str(json).unwrap();
+        let doc = &response.data[0];
+        assert!(doc.report.is_object());
+        assert!(doc.largest.is_null(), "最大保有会社=提出会社の場合は null");
+        assert_eq!(doc.second_largest["HldrName"], "株式会社東京証券取引所");
+    }
+
+    #[test]
+    fn test_deserialize_edinet_large_volume_shareholders_response() {
+        // 大量保有報告書（初回）は ChgRsn / TotalShsRatioLast が null（変更報告書のみ記載のため）
+        let json = r#"{
+            "data": [
+                {
+                    "DocId": "S100ZZZZ",
+                    "Code": "86970",
+                    "EdinetCode": "E03814",
+                    "IsrName": "株式会社日本取引所グループ",
+                    "DocTypeCode": "350",
+                    "SubDate": "2026-07-01",
+                    "SubTime": "10:00:00",
+                    "LargeHldgTypeCode": "1",
+                    "DocTitle": "大量保有報告書",
+                    "ChgRsn": null,
+                    "TotalShsHeld": 71000000,
+                    "TotalShsRatio": 0.0572,
+                    "TotalShsRatioLast": null,
+                    "TotalOutStks": 1241000000,
+                    "Hldrs": [
+                        {
+                            "HldrName": "テスト保有者",
+                            "ShsHeld": 71000000,
+                            "ShsRatio": 0.0572,
+                            "AcqDisp": [],
+                            "BrwList": [],
+                            "CredList": []
+                        }
+                    ]
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<EdinetLargeVolumeShareholders> =
+            serde_json::from_str(json).unwrap();
+        let doc = &response.data[0];
+        assert_eq!(doc.chg_rsn.0, "", "null は FlexString で空文字になる");
+        assert_eq!(doc.total_shs_ratio_last.0, "");
+        assert_eq!(doc.total_shs_ratio.0, "0.0572");
+        assert!(doc.hldrs.is_array());
     }
 
     #[test]
