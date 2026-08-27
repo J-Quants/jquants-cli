@@ -132,7 +132,7 @@ impl SchemaInfo for StockMaster {
             FieldSchema {
                 name: "ProdCat",
                 field_type: "string",
-                description: "商品区分",
+                description: "商品区分コード",
             },
         ]
     }
