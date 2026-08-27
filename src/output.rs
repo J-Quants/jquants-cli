@@ -1289,7 +1289,7 @@ mod tests {
             market_code_name: "Prime".into(),
             margin_code: "1".into(),
             margin_code_name: "MarginOK".into(),
-            product_category: "0101".into(),
+            product_category: "011".into(),
         }
     }
 

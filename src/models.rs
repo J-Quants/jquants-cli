@@ -1258,7 +1258,7 @@ mod tests {
                     "MktNm": "プライム",
                     "Mrgn": "1",
                     "MrgnNm": "信用",
-                    "ProdCat": "0101"
+                    "ProdCat": "011"
                 }
             ],
             "pagination_key": null
@@ -1268,7 +1268,7 @@ mod tests {
         assert_eq!(response.data.len(), 1);
         assert_eq!(response.data[0].code, "86970");
         assert_eq!(response.data[0].co_name, "日本取引所グループ");
-        assert_eq!(response.data[0].product_category, "0101");
+        assert_eq!(response.data[0].product_category, "011");
         assert!(response.pagination_key.is_none());
     }
 
