@@ -1289,6 +1289,7 @@ mod tests {
             market_code_name: "Prime".into(),
             margin_code: "1".into(),
             margin_code_name: "MarginOK".into(),
+            product_category: "011".into(),
         }
     }
 
@@ -1350,7 +1351,7 @@ mod tests {
             col_names,
             vec![
                 "Date", "Code", "CoName", "CoNameEn", "S17", "S17Nm", "S33", "S33Nm", "ScaleCat",
-                "Mkt", "MktNm", "Mrgn", "MrgnNm"
+                "Mkt", "MktNm", "Mrgn", "MrgnNm", "ProdCat"
             ]
         );
 

@@ -80,6 +80,8 @@ pub struct StockMaster {
     pub margin_code: String,
     #[serde(rename = "MrgnNm")]
     pub margin_code_name: String,
+    #[serde(rename = "ProdCat")]
+    pub product_category: String,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -1255,7 +1257,8 @@ mod tests {
                     "Mkt": "0111",
                     "MktNm": "プライム",
                     "Mrgn": "1",
-                    "MrgnNm": "信用"
+                    "MrgnNm": "信用",
+                    "ProdCat": "011"
                 }
             ],
             "pagination_key": null
@@ -1265,6 +1268,7 @@ mod tests {
         assert_eq!(response.data.len(), 1);
         assert_eq!(response.data[0].code, "86970");
         assert_eq!(response.data[0].co_name, "日本取引所グループ");
+        assert_eq!(response.data[0].product_category, "011");
         assert!(response.pagination_key.is_none());
     }
 

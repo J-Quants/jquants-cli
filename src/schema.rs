@@ -129,10 +129,15 @@ impl SchemaInfo for StockMaster {
                 field_type: "string",
                 description: "信用区分名（信用/貸借）",
             },
+            FieldSchema {
+                name: "ProdCat",
+                field_type: "string",
+                description: "商品区分コード",
+            },
         ]
     }
     fn field_count() -> usize {
-        13
+        14
     }
 }
 
