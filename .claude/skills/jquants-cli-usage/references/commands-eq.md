@@ -31,6 +31,26 @@ jquants eq minute --date 2026-03-14
 jquants eq minute --code 27800 --from 2026-03-14 --to 2026-03-21
 ```
 
+## eq valuation — バリュエーション指標
+
+決算短信の開示内容と株価から算出した日次の指標（EPS / FwdEPS / BPS / ROE / FwdROE / PER / FwdPER / PBR / MktCap）。
+`--code` または `--date` のいずれかの指定が必須。
+
+```sh
+jquants eq valuation --code 86970
+jquants eq valuation --date 2026-03-14                        # 全上場銘柄の指定日
+jquants eq valuation --code 86970 --from 2026-03-01 --to 2026-03-31
+jquants -f Date,Code,PER,PBR eq valuation --code 86970
+```
+
+**注意点:**
+
+- `ROE` / `FwdROE` は**小数**（`0.2310` = 23.1%）。パーセントではない
+- `MktCap` は**百万円単位**。自己株式を控除した株式数×当日終値で算出するため、`eq daily` の `MktCap`（自己株式を含む）とは値が一致しない場合がある（`eq daily` の `MktCap` は削除予定）
+- 実績値（EPS/ROE/PER）は直近12ヶ月（TTM）、予想値（Fwd系）は進行期予想にもとづく
+- ETF・ETN・優先出資証券など算出対象外の銘柄も行は返るが全指標が Null。REIT 等は指標が Null でも `MktCap` に値が入る場合がある
+- 収録開始当初（2008〜2010年頃）は Null となる銘柄・項目が多い
+
 ## eq investor-types — 投資部門別売買状況
 
 オプション `--section`: `TSEPrime`, `TSEStandard`, `TSEGrowth` など

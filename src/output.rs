@@ -5,7 +5,7 @@ use crate::models::{
     EdinetLargeVolumeShareholders, EdinetMajorShareholders, FinsDetails, FinsDividend,
     FinsEarningsDate, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
-    TdBulk, TdFiles, TdList, TopixDailyBar,
+    TdBulk, TdFiles, TdList, TopixDailyBar, Valuation,
 };
 use arrow_json::reader::infer_json_schema_from_seekable;
 use arrow_schema::Schema;
@@ -124,6 +124,30 @@ impl TableDisplay for DailyBar {
             opt_display(self.adj_close),
             opt_display(self.adj_volume),
             opt_display(self.turnover),
+        ]
+    }
+}
+
+impl TableDisplay for Valuation {
+    fn table_headers() -> Vec<&'static str> {
+        vec![
+            "Date", "Code", "EPS", "FwdEPS", "BPS", "ROE", "FwdROE", "PER", "FwdPER", "PBR",
+            "MktCap",
+        ]
+    }
+    fn table_row(&self) -> Vec<String> {
+        vec![
+            self.date.clone(),
+            self.code.clone(),
+            opt_display(self.eps),
+            opt_display(self.fwd_eps),
+            opt_display(self.bps),
+            opt_display(self.roe),
+            opt_display(self.fwd_roe),
+            opt_display(self.per),
+            opt_display(self.fwd_per),
+            opt_display(self.pbr),
+            opt_display(self.mkt_cap),
         ]
     }
 }

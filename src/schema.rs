@@ -3,7 +3,7 @@ use crate::models::{
     EdinetLargeVolumeShareholders, EdinetMajorShareholders, FinsDetails, FinsDividend,
     FinsEarningsDate, FinsSummary, FuturesBar, IndexDailyBar, InvestorType, MarginAlert,
     MarginInterest, MinuteBar, Options225Bar, OptionsBar, ShortRatio, ShortSaleReport, StockMaster,
-    TdBulk, TdFiles, TdList, TopixDailyBar,
+    TdBulk, TdFiles, TdList, TopixDailyBar, Valuation,
 };
 use serde::Serialize;
 
@@ -494,6 +494,76 @@ impl SchemaInfo for DailyBar {
     }
     fn field_count() -> usize {
         44
+    }
+}
+
+impl SchemaInfo for Valuation {
+    fn endpoint_key() -> &'static str {
+        "eq.valuation"
+    }
+    fn endpoint_description() -> &'static str {
+        "バリュエーション指標（EPS・FwdEPS・BPS・ROE・FwdROE・PER・FwdPER・PBR・時価総額。実績値はTTM、Fwd系は進行期予想にもとづく）"
+    }
+    fn field_schemas() -> Vec<FieldSchema> {
+        vec![
+            FieldSchema {
+                name: "Date",
+                field_type: "string",
+                description: "日付 (YYYY-MM-DD)",
+            },
+            FieldSchema {
+                name: "Code",
+                field_type: "string",
+                description: "銘柄コード",
+            },
+            FieldSchema {
+                name: "EPS",
+                field_type: "number?",
+                description: "1株当たり利益（実績・円）。直近12ヶ月（TTM）の純利益にもとづく",
+            },
+            FieldSchema {
+                name: "FwdEPS",
+                field_type: "number?",
+                description: "1株当たり利益（予想・円）。進行期の予想純利益にもとづく",
+            },
+            FieldSchema {
+                name: "BPS",
+                field_type: "number?",
+                description: "1株当たり純資産（円）。直近開示の期末自己資本にもとづく",
+            },
+            FieldSchema {
+                name: "ROE",
+                field_type: "number?",
+                description:
+                    "自己資本利益率（実績・小数）。0.2310 は 23.1% を表す（パーセントではない）",
+            },
+            FieldSchema {
+                name: "FwdROE",
+                field_type: "number?",
+                description:
+                    "自己資本利益率（予想・小数）。0.2310 は 23.1% を表す（パーセントではない）",
+            },
+            FieldSchema {
+                name: "PER",
+                field_type: "number?",
+                description: "株価収益率（実績・倍）。株価は当日終値",
+            },
+            FieldSchema {
+                name: "FwdPER",
+                field_type: "number?",
+                description: "株価収益率（予想・倍）。株価は当日終値",
+            },
+            FieldSchema {
+                name: "PBR",
+                field_type: "number?",
+                description: "株価純資産倍率（倍）。株価は当日終値",
+            },
+            FieldSchema {
+                name: "MktCap",
+                field_type: "number?",
+                description: "時価総額（百万円）。自己株式を控除した株式数×当日終値",
+            },
+        ]
     }
 }
 
@@ -3065,7 +3135,7 @@ macro_rules! register_endpoints {
 
 register_endpoints! {
     // eq グループ
-    StockMaster, AmBar, MinuteBar, DailyBar, EarningsCalendar, InvestorType;
+    StockMaster, AmBar, MinuteBar, DailyBar, Valuation, EarningsCalendar, InvestorType;
     // mkt グループ
     Breakdown, MarginAlert, MarginInterest, Calendar, ShortRatio, ShortSaleReport;
     // deriv グループ
@@ -3090,7 +3160,7 @@ mod tests {
 
     #[test]
     fn test_all_endpoints_count() {
-        assert_eq!(all_endpoint_schemas().len(), 28);
+        assert_eq!(all_endpoint_schemas().len(), 29);
     }
 
     #[test]

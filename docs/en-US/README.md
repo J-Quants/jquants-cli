@@ -132,6 +132,7 @@ jquants --output csv -f Date,Open,High,Low,Close,Volume eq daily --code 86970
 | `eq daily` | Daily OHLCV bars (adjusted) | `--code`, `--date`, `--from`, `--to` |
 | `eq am` | Morning session bars | `--code` |
 | `eq minute` | Minute bars | `--code`, `--date`, `--from`, `--to` |
+| `eq valuation` | Valuation indicators (EPS/BPS/ROE/PER/PBR/market cap) | `--code`, `--date`, `--from`, `--to` |
 | `eq earnings-calendar` | Earnings announcement schedule | — |
 | `eq investor-types` | Trading by investor type | `--section`, `--from`, `--to` |
 | `eq trades` | Tick data (bulk download) | `--date`, `--download` |

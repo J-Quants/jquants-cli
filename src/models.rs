@@ -255,6 +255,33 @@ pub struct DailyBar {
     pub ex_rt: Option<String>,
 }
 
+/// バリュエーション指標（/equities/valuation）
+#[derive(Debug, Clone, Deserialize, Serialize)]
+pub struct Valuation {
+    #[serde(rename = "Date")]
+    pub date: String,
+    #[serde(rename = "Code")]
+    pub code: String,
+    #[serde(rename = "EPS")]
+    pub eps: Option<f64>,
+    #[serde(rename = "FwdEPS")]
+    pub fwd_eps: Option<f64>,
+    #[serde(rename = "BPS")]
+    pub bps: Option<f64>,
+    #[serde(rename = "ROE")]
+    pub roe: Option<f64>,
+    #[serde(rename = "FwdROE")]
+    pub fwd_roe: Option<f64>,
+    #[serde(rename = "PER")]
+    pub per: Option<f64>,
+    #[serde(rename = "FwdPER")]
+    pub fwd_per: Option<f64>,
+    #[serde(rename = "PBR")]
+    pub pbr: Option<f64>,
+    #[serde(rename = "MktCap")]
+    pub mkt_cap: Option<f64>,
+}
+
 #[derive(Debug, Deserialize)]
 pub struct BulkGetResponse {
     pub url: String,
@@ -1545,6 +1572,94 @@ mod tests {
             response.pagination_key.as_deref(),
             Some("am_next_page_token_xyz")
         );
+    }
+
+    #[test]
+    fn test_deserialize_valuation_response() {
+        let json = r#"{
+            "data": [
+                {
+                    "Date": "2023-03-24",
+                    "Code": "86970",
+                    "EPS": 89.4,
+                    "FwdEPS": 87.9,
+                    "BPS": 590.65,
+                    "ROE": 0.1534,
+                    "FwdROE": 0.1488,
+                    "PER": 22.88,
+                    "FwdPER": 23.26,
+                    "PBR": 3.46,
+                    "MktCap": 1077137.0
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<Valuation> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        assert_eq!(response.data[0].date, "2023-03-24");
+        assert_eq!(response.data[0].code, "86970");
+        assert_eq!(response.data[0].eps, Some(89.4));
+        assert_eq!(response.data[0].roe, Some(0.1534));
+        assert_eq!(response.data[0].mkt_cap, Some(1077137.0));
+        assert!(response.pagination_key.is_none());
+    }
+
+    /// 算出対象外の銘柄（ETF・優先出資証券等）は全指標が null で返る
+    #[test]
+    fn test_deserialize_valuation_all_null() {
+        let json = r#"{
+            "data": [
+                {
+                    "Date": "2023-03-24",
+                    "Code": "13050",
+                    "EPS": null,
+                    "FwdEPS": null,
+                    "BPS": null,
+                    "ROE": null,
+                    "FwdROE": null,
+                    "PER": null,
+                    "FwdPER": null,
+                    "PBR": null,
+                    "MktCap": null
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<Valuation> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        assert!(response.data[0].eps.is_none());
+        assert!(response.data[0].mkt_cap.is_none());
+    }
+
+    /// REIT 等は指標が全て Null でも MktCap には値が入る場合がある
+    #[test]
+    fn test_deserialize_valuation_mkt_cap_only() {
+        let json = r#"{
+            "data": [
+                {
+                    "Date": "2023-03-24",
+                    "Code": "89510",
+                    "EPS": null,
+                    "FwdEPS": null,
+                    "BPS": null,
+                    "ROE": null,
+                    "FwdROE": null,
+                    "PER": null,
+                    "FwdPER": null,
+                    "PBR": null,
+                    "MktCap": 1234567.0
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<Valuation> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        assert!(response.data[0].eps.is_none());
+        assert!(response.data[0].pbr.is_none());
+        assert_eq!(response.data[0].mkt_cap, Some(1234567.0));
     }
 
     #[test]

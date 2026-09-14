@@ -117,6 +117,7 @@ jquants --output json schema    # JSON 形式で出力
 |---|---|---|
 | 全銘柄マスタ | `jquants eq master` | 日次 17:30頃 |
 | 株価四本値 | `jquants eq daily` | 日次 16:30頃 |
+| バリュエーション指標 | `jquants eq valuation` | 日次 16:30頃 |
 | 前場四本値 | `jquants eq am` | 日次 12:00頃 |
 | 分足データ | `jquants eq minute` | 日次 16:30頃 |
 | 投資部門別売買状況 | `jquants eq investor-types` | 週次(木) 18:00頃 |
@@ -308,7 +309,7 @@ J-Quants API はプランごとに1分あたりのリクエスト上限が設定
 
 | 最低必要プラン | CLI コマンド |
 |---|---|
-| **Free** | `eq master`, `eq daily`, `eq earnings-calendar`, `fins summary`, `fins earnings-date`, `mkt calendar` |
+| **Free** | `eq master`, `eq daily`, `eq valuation`, `eq earnings-calendar`, `fins summary`, `fins earnings-date`, `mkt calendar` |
 | **Light** | `eq investor-types`, `idx daily-topix` |
 | **Standard** | `mkt margin-interest`, `mkt short-ratio`, `mkt short-sale-report`, `mkt margin-alert`, `idx daily`, `deriv options-225`, `edinet major-shareholders`, `edinet cross-shareholdings`, `edinet large-volume-shareholders` |
 | **Premium** | `eq am`, `fins details`, `fins dividend`, `mkt breakdown`, `deriv futures`, `deriv options` |

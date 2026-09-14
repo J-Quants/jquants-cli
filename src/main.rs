@@ -156,6 +156,22 @@ async fn run_equities(
                 .await?;
             output(&results, out_fmt, save, fields)?;
         }
+        EquitiesCommands::Valuation {
+            code,
+            date,
+            from,
+            to,
+        } => {
+            let results = client
+                .get_valuations(
+                    code.as_deref(),
+                    date.as_deref(),
+                    from.as_deref(),
+                    to.as_deref(),
+                )
+                .await?;
+            output(&results, out_fmt, save, fields)?;
+        }
         EquitiesCommands::EarningsCalendar {} => {
             let results = client.get_earnings_calendar().await?;
             output(&results, out_fmt, save, fields)?;

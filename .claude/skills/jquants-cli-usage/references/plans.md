@@ -10,6 +10,7 @@
 |---|---|---|---|---|---|
 | `eq master` | 上場銘柄一覧 | API: 12w〜2y12w | API/CSV: 5年前まで | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `eq daily` | 株価四本値 | API: 12w〜2y12w | API/CSV: 5年前まで | API/CSV: 10年前まで | API/CSV: 20年前まで |
+| `eq valuation` | バリュエーション指標 | API: 12w〜2y12w | API/CSV: 5年前まで | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `eq am` | 前場四本値 | - | - | - | API: 直近のみ |
 | `eq investor-types` | 投資部門別情報 | - | API/CSV: 5年前まで | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `eq earnings-calendar` | 決算発表予定日 | API: 直近のみ | API: 直近のみ | API: 直近のみ | API: 直近のみ |
@@ -52,7 +53,7 @@
 
 | 最低必要プラン | CLI コマンド |
 |---|---|
-| **Free** | `eq master`, `eq daily`, `eq earnings-calendar`, `fins summary`, `mkt calendar` |
+| **Free** | `eq master`, `eq daily`, `eq valuation`, `eq earnings-calendar`, `fins summary`, `mkt calendar` |
 | **Light** | `eq investor-types`, `idx daily-topix` |
 | **Standard** | `mkt margin-interest`, `mkt short-ratio`, `mkt short-sale-report`, `mkt margin-alert`, `idx daily`, `deriv options-225` |
 | **Premium** | `eq am`, `fins details`, `fins dividend`, `mkt breakdown`, `deriv futures`, `deriv options` |
@@ -64,4 +65,4 @@
 
 1. **CSV/バルクダウンロード不可** — `mkt calendar` を除き、CSV 形式でのデータ取得およびバルクダウンロード（`bulk get`）は利用不可。API（個別エンドポイント）のみ使用可能
 2. **データウィンドウ制限** — 利用可能なデータは「12週間前〜2年12週間前」のローリングウィンドウに限定。最新12週のデータも、2年12週より古いデータも取得不可
-3. **利用可能 API が限定** — `eq master`, `eq daily`, `eq earnings-calendar`, `fins summary`, `mkt calendar` の5コマンドのみ
+3. **利用可能 API が限定** — `eq master`, `eq daily`, `eq valuation`, `eq earnings-calendar`, `fins summary`, `mkt calendar` の6コマンドのみ
