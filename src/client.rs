@@ -5,7 +5,7 @@ use crate::models::{
     DailyBar, EarningsCalendar, EdinetCrossShareholdings, EdinetLargeVolumeShareholders,
     EdinetMajorShareholders, FinsDetails, FinsDividend, FinsEarningsDate, FinsSummary, FuturesBar,
     IndexDailyBar, InvestorType, MarginAlert, MarginInterest, MinuteBar, Options225Bar, OptionsBar,
-    ShortRatio, ShortSaleReport, StockMaster, TdBulk, TdFiles, TdList, TopixDailyBar,
+    ShortRatio, ShortSaleReport, StockMaster, TdBulk, TdFiles, TdList, TopixDailyBar, Valuation,
 };
 use reqwest::Client;
 
@@ -150,6 +150,17 @@ impl JQuantsClient {
     ) -> Result<Vec<DailyBar>, AppError> {
         let params = build_params(&[("code", code), ("date", date), ("from", from), ("to", to)]);
         self.fetch_paginated("/equities/bars/daily", params).await
+    }
+
+    pub async fn get_valuations(
+        &self,
+        code: Option<&str>,
+        date: Option<&str>,
+        from: Option<&str>,
+        to: Option<&str>,
+    ) -> Result<Vec<Valuation>, AppError> {
+        let params = build_params(&[("code", code), ("date", date), ("from", from), ("to", to)]);
+        self.fetch_paginated("/equities/valuation", params).await
     }
 
     pub async fn get_bulk_list(

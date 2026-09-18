@@ -74,7 +74,9 @@ Examples:
   jquants eq minute --code 27800              # 分足データ取得
   jquants eq earnings-calendar                # 決算発表予定日取得
   jquants eq investor-types --section TSEPrime  # 投資部門別売買状況
-  jquants eq trades --date 2025-12 --download   # 株価ティックダウンロード")]
+  jquants eq trades --date 2025-12 --download   # 株価ティックダウンロード
+  jquants eq valuation --code 86970             # バリュエーション指標
+  jquants eq valuation --date 2026-03-14        # 特定日の全銘柄バリュエーション指標")]
     Equities {
         #[command(subcommand)]
         command: EquitiesCommands,
@@ -268,6 +270,36 @@ pub enum EquitiesCommands {
 
         /// Date (YYYY-MM-DD)
         #[arg(long)]
+        date: Option<String>,
+
+        /// Start date (YYYY-MM-DD)
+        #[arg(long)]
+        from: Option<String>,
+
+        /// End date (YYYY-MM-DD)
+        #[arg(long)]
+        to: Option<String>,
+    },
+    /// Fetch valuation indicators (バリュエーション指標)
+    #[command(long_about = "\
+日次のバリュエーション指標を取得します (EPS/FwdEPS/BPS/ROE/FwdROE/PER/FwdPER/PBR/MktCap)。
+
+--code または --date のいずれかの指定が必須です。
+
+注意:
+  ROE/FwdROE は小数で収録されます（0.2310 は 23.1% を表します）。パーセントではありません。
+  MktCap は百万円単位で、自己株式を控除した株式数 × 当日終値で算出します。
+  eq daily の MktCap は自己株式を含む株式数を用いるため、値が一致しない場合があります。
+  ETF・ETN・優先出資証券など算出対象外の銘柄は、データ行は返りますが指標が null になります。")]
+    // --code と --date の併用は仕様上有効なため multiple(true) とする
+    #[command(group = clap::ArgGroup::new("query").required(true).multiple(true))]
+    Valuation {
+        /// Stock code
+        #[arg(long, group = "query")]
+        code: Option<String>,
+
+        /// Date (YYYY-MM-DD)
+        #[arg(long, group = "query")]
         date: Option<String>,
 
         /// Start date (YYYY-MM-DD)

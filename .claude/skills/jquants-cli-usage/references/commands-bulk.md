@@ -41,6 +41,7 @@ jquants bulk list --from 2026-03-01 --to 2026-03-14
 | 株式 | `/equities/bars/minute` *(Add-on)* | 株価分足 |
 | 株式 | `/equities/trades` *(Add-on)* | 株価ティック |
 | 株式 | `/equities/investor-types` | 投資部門別情報 |
+| 株式 | `/equities/valuation` | バリュエーション指標 |
 | 財務 | `/fins/summary` | 財務情報 |
 | 財務 | `/fins/details` | 財務諸表（BS/PL/CF） |
 | 財務 | `/fins/dividend` | 配当金情報 |

@@ -13,6 +13,7 @@
 | `eq master` | `/equities/master` | 日次 | 17:30頃 / 翌営業日8:00頃 | 翌営業日の銘柄情報は17:30以降に取得可能。翌朝8:00に再更新あり |
 | `eq daily` | `/equities/bars/daily` | 日次 | 16:30頃 | — |
 | `eq am` | `/equities/bars/daily/am` | 日次 | 12:00頃 | 前場終了後に当日分が反映 |
+| `eq valuation` | `/equities/valuation` | 日次 | 16:30頃 | 決算短信の開示内容は開示時刻によらず原則翌営業日のデータから反映 |
 | `eq minute` | `/equities/bars/minute` | 日次 | 16:30頃 | — |
 | `eq trades` | `/equities/trades` | 日次 | 16:30頃 | — |
 | `eq investor-types` | `/equities/investor-types` | 週次（第4営業日） | 18:00頃 | 通常は木曜日。祝日がある週は後ろ倒し |
