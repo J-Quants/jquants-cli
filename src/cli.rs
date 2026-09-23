@@ -398,7 +398,7 @@ pub enum MarketsCommands {
     },
     /// Fetch trading calendar (営業日・休業日)
     Calendar {
-        /// Holiday division (休日区分)
+        /// Holiday division (休日区分: 0=非営業日, 1=営業日, 2=東証半日立会日, 3=非営業日(祝日取引あり))
         #[arg(long)]
         hol_div: Option<String>,
 
