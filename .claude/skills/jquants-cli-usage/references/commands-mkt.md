@@ -21,6 +21,7 @@ jquants mkt margin-alert --from 2024-02-01 --to 2024-02-28
 2026-09-25 申込分以降は日次（毎営業日 16:00頃に前営業日の申込分を配信）。2026-09-24 以前は週末時点（通常は金曜日付）のデータのみ。
 `--code` / `--date` / `--published-date` のいずれか必須。`--published-date`（公表日）は `--date` / `--from` / `--to` と同時指定不可（`--code` との併用は可）。
 PubDate と金額 6 項目（ShrtVal 等）は 2026-09-25 申込分以降のみ値が入り、それ以前は null（テーブル / CSV では空欄）。
+テーブル表示は PubDate / Date / Code / IssType と株数 6 列。金額 6 列は `--output json` / `--output csv` または `-f ShrtVal,LongVal` 等で取得する。
 
 ```sh
 jquants mkt margin-interest --code 27800

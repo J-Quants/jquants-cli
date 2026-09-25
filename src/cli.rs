@@ -381,15 +381,17 @@ pub enum MarketsCommands {
     },
     /// Fetch margin interest data (信用取引残高)
     #[command(
-        long_about = "Fetch daily margin interest data (信用取引残高). Daily data is available from 2026-09-25; earlier data is weekly (as of the last business day of each week). Either --code, --date, or --published-date is required."
+        long_about = "Fetch daily margin interest data (信用取引残高). Daily data is available from 2026-09-25; earlier data is weekly (as of the last business day of each week). Either --code, --date, or --published-date is required. Table output shows PubDate/Date/Code/IssType and the six share-quantity fields; use --output json/csv or --fields for the value (*Val) fields."
     )]
     #[command(name = "margin-interest")]
+    // --code と --date / --published-date の併用は仕様上有効なため multiple(true) とする
+    #[command(group = clap::ArgGroup::new("query").required(true).multiple(true))]
     MarginInterest {
         /// Stock code
-        #[arg(long)]
+        #[arg(long, group = "query")]
         code: Option<String>,
         /// Date (YYYY-MM-DD, application date)
-        #[arg(long)]
+        #[arg(long, group = "query")]
         date: Option<String>,
         /// Start date (YYYY-MM-DD)
         #[arg(long)]
@@ -398,7 +400,7 @@ pub enum MarketsCommands {
         #[arg(long)]
         to: Option<String>,
         /// Published date (YYYY-MM-DD). Cannot be combined with --date/--from/--to
-        #[arg(long, conflicts_with_all = ["date", "from", "to"])]
+        #[arg(long, group = "query", conflicts_with_all = ["date", "from", "to"])]
         published_date: Option<String>,
     },
     /// Fetch trading calendar (営業日・休業日)
