@@ -87,7 +87,7 @@ Examples:
 Examples:
   jquants mkt breakdown --code 27800          # 売買内訳取得
   jquants mkt margin-alert --code 13260       # 日々公表信用取引残高
-  jquants mkt margin-interest --code 27800    # 信用取引週末残高
+  jquants mkt margin-interest --code 27800    # 信用取引残高
   jquants mkt calendar                        # 取引カレンダー
   jquants mkt short-ratio --s33 0050          # 業種別空売り比率 (--s33 は業種コード、--code ではない)
   jquants mkt short-sale-report --code 13660  # 空売り残高報告")]
@@ -379,14 +379,16 @@ pub enum MarketsCommands {
         #[arg(long)]
         to: Option<String>,
     },
-    /// Fetch margin interest data (週末残高)
-    #[command(long_about = "Fetch weekly margin interest data (信用取引週末残高)")]
+    /// Fetch margin interest data (信用取引残高)
+    #[command(
+        long_about = "Fetch daily margin interest data (信用取引残高). Daily data is available from 2026-09-25; earlier data is weekly (as of the last business day of each week). Either --code, --date, or --published-date is required."
+    )]
     #[command(name = "margin-interest")]
     MarginInterest {
         /// Stock code
         #[arg(long)]
         code: Option<String>,
-        /// Date (YYYY-MM-DD)
+        /// Date (YYYY-MM-DD, application date)
         #[arg(long)]
         date: Option<String>,
         /// Start date (YYYY-MM-DD)
@@ -395,6 +397,9 @@ pub enum MarketsCommands {
         /// End date (YYYY-MM-DD)
         #[arg(long)]
         to: Option<String>,
+        /// Published date (YYYY-MM-DD). Cannot be combined with --date/--from/--to
+        #[arg(long, conflicts_with_all = ["date", "from", "to"])]
+        published_date: Option<String>,
     },
     /// Fetch trading calendar (営業日・休業日)
     Calendar {

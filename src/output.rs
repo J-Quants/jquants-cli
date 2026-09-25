@@ -357,24 +357,19 @@ impl TableDisplay for InvestorType {
 impl TableDisplay for MarginInterest {
     fn table_headers() -> Vec<&'static str> {
         vec![
-            "Date",
-            "Code",
-            "ShrtVol",
-            "LongVol",
-            "ShrtNegVol",
-            "LongNegVol",
-            "IssType",
+            "PubDate", "Date", "Code", "IssType", "ShrtVol", "LongVol", "ShrtVal", "LongVal",
         ]
     }
     fn table_row(&self) -> Vec<String> {
         vec![
+            self.pub_date.clone().unwrap_or_default(),
             self.date.clone(),
             self.code.clone(),
+            self.iss_type.clone(),
             self.shrt_vol.to_string(),
             self.long_vol.to_string(),
-            self.shrt_neg_vol.to_string(),
-            self.long_neg_vol.to_string(),
-            self.iss_type.clone(),
+            self.shrt_val.to_string(),
+            self.long_val.to_string(),
         ]
     }
 }

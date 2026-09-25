@@ -1147,12 +1147,18 @@ pub struct MarginAlert {
     pub tse_mrgn_reg_cls: String,
 }
 
+// 信用取引残高（2026-09-25 申込分以降は日次）。PubDate と金額 6 項目（*Val）は
+// 2026-09-24 以前のデータでは null で返るため、PubDate は Option、金額は FlexString で受ける
 #[derive(Debug, Deserialize, Serialize, Clone)]
 pub struct MarginInterest {
+    #[serde(rename = "PubDate")]
+    pub pub_date: Option<String>,
     #[serde(rename = "Date")]
     pub date: String,
     #[serde(rename = "Code")]
     pub code: String,
+    #[serde(rename = "IssType")]
+    pub iss_type: String,
     #[serde(rename = "ShrtVol")]
     pub shrt_vol: FlexString,
     #[serde(rename = "LongVol")]
@@ -1165,8 +1171,18 @@ pub struct MarginInterest {
     pub shrt_std_vol: FlexString,
     #[serde(rename = "LongStdVol")]
     pub long_std_vol: FlexString,
-    #[serde(rename = "IssType")]
-    pub iss_type: String,
+    #[serde(rename = "ShrtVal")]
+    pub shrt_val: FlexString,
+    #[serde(rename = "LongVal")]
+    pub long_val: FlexString,
+    #[serde(rename = "ShrtNegVal")]
+    pub shrt_neg_val: FlexString,
+    #[serde(rename = "LongNegVal")]
+    pub long_neg_val: FlexString,
+    #[serde(rename = "ShrtStdVal")]
+    pub shrt_std_val: FlexString,
+    #[serde(rename = "LongStdVal")]
+    pub long_std_val: FlexString,
 }
 
 #[derive(Debug, Deserialize, Serialize, Clone)]
@@ -1660,6 +1676,79 @@ mod tests {
         assert!(response.data[0].eps.is_none());
         assert!(response.data[0].pbr.is_none());
         assert_eq!(response.data[0].mkt_cap, Some(1234567.0));
+    }
+
+    #[test]
+    fn test_deserialize_margin_interest_response() {
+        // 2026-09-25 申込分以降: 16 項目すべてに値が入る
+        let json = r#"{
+            "data": [
+                {
+                    "PubDate": "2026-09-28",
+                    "Date": "2026-09-25",
+                    "Code": "86970",
+                    "IssType": "2",
+                    "ShrtVol": 257400.0,
+                    "LongVol": 225000.0,
+                    "ShrtNegVol": 242800.0,
+                    "LongNegVol": 81900.0,
+                    "ShrtStdVol": 14600.0,
+                    "LongStdVol": 143100.0,
+                    "ShrtVal": 514800000.0,
+                    "LongVal": 450000000.0,
+                    "ShrtNegVal": 485600000.0,
+                    "LongNegVal": 163800000.0,
+                    "ShrtStdVal": 29200000.0,
+                    "LongStdVal": 286200000.0
+                }
+            ],
+            "pagination_key": null
+        }"#;
+
+        let response: ApiResponse<MarginInterest> = serde_json::from_str(json).unwrap();
+        assert_eq!(response.data.len(), 1);
+        let row = &response.data[0];
+        assert_eq!(row.pub_date.as_deref(), Some("2026-09-28"));
+        assert_eq!(row.date, "2026-09-25");
+        assert_eq!(row.code, "86970");
+        assert_eq!(row.iss_type, "2");
+        assert_eq!(row.shrt_vol.to_string(), "257400.0");
+        assert_eq!(row.long_std_val.to_string(), "286200000.0");
+    }
+
+    #[test]
+    fn test_deserialize_margin_interest_with_null_pub_date_and_values() {
+        // 2026-09-24 以前の週次データ: PubDate と金額 6 項目は null で返る
+        let json = r#"{
+            "data": [
+                {
+                    "PubDate": null,
+                    "Date": "2026-09-18",
+                    "Code": "86970",
+                    "IssType": "2",
+                    "ShrtVol": 257400.0,
+                    "LongVol": 225000.0,
+                    "ShrtNegVol": 242800.0,
+                    "LongNegVol": 81900.0,
+                    "ShrtStdVol": 14600.0,
+                    "LongStdVol": 143100.0,
+                    "ShrtVal": null,
+                    "LongVal": null,
+                    "ShrtNegVal": null,
+                    "LongNegVal": null,
+                    "ShrtStdVal": null,
+                    "LongStdVal": null
+                }
+            ]
+        }"#;
+
+        let response: ApiResponse<MarginInterest> = serde_json::from_str(json).unwrap();
+        let row = &response.data[0];
+        assert!(row.pub_date.is_none());
+        assert_eq!(row.date, "2026-09-18");
+        assert_eq!(row.shrt_vol.to_string(), "257400.0");
+        assert_eq!(row.shrt_val.to_string(), "");
+        assert_eq!(row.long_std_val.to_string(), "");
     }
 
     #[test]

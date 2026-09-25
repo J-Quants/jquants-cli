@@ -129,7 +129,7 @@ jquants --output json schema    # JSON 形式で出力
 |---|---|---|
 | 売買内訳 | `jquants mkt breakdown` | 日次 18:00頃 |
 | 日々公表信用残 | `jquants mkt margin-alert` | 日次 16:30頃 |
-| 信用週末残高 | `jquants mkt margin-interest` | 週次(火) 16:30頃 |
+| 信用取引残高 | `jquants mkt margin-interest` | 日次 16:00頃 |
 | 取引カレンダー | `jquants mkt calendar` | 不定期 |
 | 業種別空売り比率 | `jquants mkt short-ratio` | 日次 16:30頃 |
 | 空売り残高報告 | `jquants mkt short-sale-report` | 日次 17:30頃 |
@@ -367,4 +367,4 @@ J-Quants API のデータは市場イベント後に順次更新される。**�
 | Free プランで `bulk get` や `--output csv` を使う | 個別 API（`eq daily --code X`）を使う、または上位プランへアップグレードを促す | Free プランは CSV/バルクダウンロード非対応（`mkt calendar` を除く）。API のみ利用可能 |
 | Light プランで `idx daily` や `deriv options-225` を使う | Standard プランが必要である旨を伝える | Standard 以上が必要な API。プランとコマンドの対応は references/plans.md を参照 |
 | 16:00に `eq daily` で「今日の株価」を取得して最新と思い込む | 「16:30頃に当日分が反映されます。現時点では前営業日のデータです」と伝える | 株価四本値は16:30頃に当日分が更新される。更新前は前営業日のデータが最新 |
-| 月曜朝に `mkt margin-interest` を取得して先週分と思い込む | 前々週金曜時点のデータ。火曜16:30以降に前週金曜分が反映されると伝える | 信用週末残高は第2営業日（通常火曜）16:30頃に更新される週次データ |
+| `mkt margin-interest --published-date X --date Y` のように公表日と申込日付を同時指定する | `--published-date` 単独（`--code` との併用は可）にする | 公表日と申込日付（`--date`/`--from`/`--to`）は排他。2026-09-25 申込分以降は毎営業日 16:00頃に前営業日分が反映される日次データ。2026-09-24 以前は週末時点のデータのみで、PubDate と金額 6 項目は null |

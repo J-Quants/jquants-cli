@@ -237,6 +237,7 @@ async fn run_markets(
             date,
             from,
             to,
+            published_date,
         } => {
             let results = client
                 .get_margin_interest(
@@ -244,6 +245,7 @@ async fn run_markets(
                     date.as_deref(),
                     from.as_deref(),
                     to.as_deref(),
+                    published_date.as_deref(),
                 )
                 .await?;
             output(&results, out_fmt, save, fields)?;
