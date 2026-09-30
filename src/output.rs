@@ -354,27 +354,34 @@ impl TableDisplay for InvestorType {
     }
 }
 
+// テーブル表示は株数 6 列までを表示する（金額 6 列は --output json/csv または --fields で取得）
 impl TableDisplay for MarginInterest {
     fn table_headers() -> Vec<&'static str> {
         vec![
+            "PubDate",
             "Date",
             "Code",
+            "IssType",
             "ShrtVol",
             "LongVol",
             "ShrtNegVol",
             "LongNegVol",
-            "IssType",
+            "ShrtStdVol",
+            "LongStdVol",
         ]
     }
     fn table_row(&self) -> Vec<String> {
         vec![
+            self.pub_date.clone().unwrap_or_default(),
             self.date.clone(),
             self.code.clone(),
+            self.iss_type.clone(),
             self.shrt_vol.to_string(),
             self.long_vol.to_string(),
             self.shrt_neg_vol.to_string(),
             self.long_neg_vol.to_string(),
-            self.iss_type.clone(),
+            self.shrt_std_vol.to_string(),
+            self.long_std_vol.to_string(),
         ]
     }
 }

@@ -1064,14 +1064,19 @@ impl SchemaInfo for MarginInterest {
         "mkt.margin-interest"
     }
     fn endpoint_description() -> &'static str {
-        "信用取引週末残高（空売り・ロング別の株数）"
+        "信用取引残高（売り・買い別の株数と金額。2026-09-25 申込分以降は日次、それ以前は週末時点）"
     }
     fn field_schemas() -> Vec<FieldSchema> {
         vec![
             FieldSchema {
+                name: "PubDate",
+                field_type: "string",
+                description: "公表日 (YYYY-MM-DD)。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
                 name: "Date",
                 field_type: "string",
-                description: "日付 (YYYY-MM-DD)",
+                description: "申込日付 (YYYY-MM-DD)",
             },
             FieldSchema {
                 name: "Code",
@@ -1079,44 +1084,80 @@ impl SchemaInfo for MarginInterest {
                 description: "銘柄コード",
             },
             FieldSchema {
+                name: "IssType",
+                field_type: "string",
+                description: "銘柄区分（1: 信用銘柄、2: 貸借銘柄、3: その他）",
+            },
+            FieldSchema {
                 name: "ShrtVol",
                 field_type: "string",
-                description: "空売り残高株数",
+                description: "売合計信用取引残高（株数）",
             },
             FieldSchema {
                 name: "LongVol",
                 field_type: "string",
-                description: "ロング残高株数",
+                description: "買合計信用取引残高（株数）",
             },
             FieldSchema {
                 name: "ShrtNegVol",
                 field_type: "string",
-                description: "制度空売り残高株数",
+                description: "売一般信用取引残高（株数）",
             },
             FieldSchema {
                 name: "LongNegVol",
                 field_type: "string",
-                description: "制度ロング残高株数",
+                description: "買一般信用取引残高（株数）",
             },
             FieldSchema {
                 name: "ShrtStdVol",
                 field_type: "string",
-                description: "一般空売り残高株数",
+                description: "売制度信用取引残高（株数）",
             },
             FieldSchema {
                 name: "LongStdVol",
                 field_type: "string",
-                description: "一般ロング残高株数",
+                description: "買制度信用取引残高（株数）",
             },
             FieldSchema {
-                name: "IssType",
+                name: "ShrtVal",
                 field_type: "string",
-                description: "銘柄種別（信用/貸借）",
+                description:
+                    "売合計信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
+                name: "LongVal",
+                field_type: "string",
+                description:
+                    "買合計信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
+                name: "ShrtNegVal",
+                field_type: "string",
+                description:
+                    "売一般信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
+                name: "LongNegVal",
+                field_type: "string",
+                description:
+                    "買一般信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
+                name: "ShrtStdVal",
+                field_type: "string",
+                description:
+                    "売制度信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
+            },
+            FieldSchema {
+                name: "LongStdVal",
+                field_type: "string",
+                description:
+                    "買制度信用取引残高（金額）。2026-09-25 申込分以降のみ（それ以前は null）",
             },
         ]
     }
     fn field_count() -> usize {
-        9
+        16
     }
 }
 

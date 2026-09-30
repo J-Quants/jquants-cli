@@ -19,7 +19,7 @@
 | `fins details` | 財務諸表（BS/PL/CF） | - | - | - | API/CSV: 20年前まで |
 | `fins dividend` | 配当金情報 | - | - | - | API/CSV: 20年前まで |
 | `mkt calendar` | 取引カレンダー | API/CSV: 12w〜2y12w | API/CSV: 翌年末〜5年前 | API/CSV: 翌年末〜10年前 | API/CSV: 翌年末〜20年前 |
-| `mkt margin-interest` | 信用取引週末残高 | - | - | API/CSV: 10年前まで | API/CSV: 20年前まで |
+| `mkt margin-interest` | 信用取引残高 | - | - | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `mkt short-ratio` | 業種別空売り比率 | - | - | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `mkt short-sale-report` | 空売り残高報告 | - | - | API/CSV: 10年前まで | API/CSV: 20年前まで |
 | `mkt margin-alert` | 日々公表信用取引残高 | - | - | API/CSV: 10年前まで | API/CSV: 20年前まで |

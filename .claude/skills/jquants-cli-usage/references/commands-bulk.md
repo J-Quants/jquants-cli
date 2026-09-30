@@ -50,7 +50,7 @@ jquants bulk list --from 2026-03-01 --to 2026-03-14
 | デリバティブ | `/derivatives/bars/daily/options/225` | 日経225オプション四本値 |
 | デリバティブ | `/derivatives/bars/daily/futures` | 先物四本値 |
 | デリバティブ | `/derivatives/bars/daily/options` | オプション四本値 |
-| 市場 | `/markets/margin-interest` | 信用取引週末残高 |
+| 市場 | `/markets/margin-interest` | 信用取引残高 |
 | 市場 | `/markets/short-ratio` | 業種別空売り比率 |
 | 市場 | `/markets/short-sale-report` | 空売り残高報告 |
 | 市場 | `/markets/margin-alert` | 日々公表信用取引残高 |

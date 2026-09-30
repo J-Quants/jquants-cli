@@ -149,7 +149,7 @@ jquants --output json eq earnings-calendar
 |---|---|---|
 | `mkt breakdown` | Trading breakdown | `--code`, `--date`, `--from`, `--to` |
 | `mkt margin-alert` | Daily margin alert | `--code`, `--date`, `--from`, `--to` |
-| `mkt margin-interest` | Weekly margin interest | `--code`, `--date`, `--from`, `--to` |
+| `mkt margin-interest` | Margin trading outstanding (daily from 2026-09-25) | `--code`, `--date`, `--from`, `--to`, `--published-date` |
 | `mkt calendar` | Trading calendar | `--hol-div`, `--from`, `--to` |
 | `mkt short-ratio` | Sector short-selling ratio | `--s33`, `--date`, `--from`, `--to` |
 | `mkt short-sale-report` | Short sale report | `--code`, `--disc-date`, `--disc-date-from`, `--disc-date-to`, `--calc-date` |

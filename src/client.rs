@@ -435,8 +435,15 @@ impl JQuantsClient {
         date: Option<&str>,
         from: Option<&str>,
         to: Option<&str>,
+        published_date: Option<&str>,
     ) -> Result<Vec<MarginInterest>, AppError> {
-        let params = build_params(&[("code", code), ("date", date), ("from", from), ("to", to)]);
+        let params = build_params(&[
+            ("code", code),
+            ("date", date),
+            ("from", from),
+            ("to", to),
+            ("published_date", published_date),
+        ]);
         self.fetch_paginated("/markets/margin-interest", params)
             .await
     }
