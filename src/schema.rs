@@ -1178,7 +1178,8 @@ impl SchemaInfo for Calendar {
             FieldSchema {
                 name: "HolDiv",
                 field_type: "string",
-                description: "休日区分（0=営業日, 1=休業日）",
+                description:
+                    "休日区分（0=非営業日, 1=営業日, 2=東証半日立会日, 3=非営業日(祝日取引あり)）",
             },
         ]
     }
